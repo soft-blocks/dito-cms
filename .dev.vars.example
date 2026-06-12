@@ -1,0 +1,9 @@
+# Better Auth signing secret. OPTIONAL.
+#
+# If unset, the worker auto-generates one and stores it in the D1 `settings` table —
+# so the Deploy-to-Cloudflare button works with zero configuration. Set this explicitly
+# for production (e.g. `wrangler secret put BETTER_AUTH_SECRET`) if you want to control
+# the secret or rotate it. A set env value always wins over the stored fallback.
+#
+# Generate one with: openssl rand -base64 32
+BETTER_AUTH_SECRET=

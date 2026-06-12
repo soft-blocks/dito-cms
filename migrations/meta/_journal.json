@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1781157002672,
+      "tag": "0000_conscious_ulik",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1781160325838,
+      "tag": "0001_fluffy_jackal",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1781197337748,
+      "tag": "0002_many_sauron",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1781200684241,
+      "tag": "0003_lying_vampiro",
+      "breakpoints": true
+    }
+  ]
+}

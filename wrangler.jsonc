@@ -1,0 +1,28 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dito-cms",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2025-09-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/media/*", "/mcp"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "dito-cms-db",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "dito-cms-media"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

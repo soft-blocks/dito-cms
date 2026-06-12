@@ -1,0 +1,263 @@
+// Isomorphic API contract shared by the worker and the SPA.
+// No React, no Hono, no worker imports allowed here.
+
+import type { FieldType, FieldOptions } from "./field-types";
+
+/** Canonical error envelope returned by every API route on failure. */
+export interface ApiErrorBody {
+  error: {
+    code: ApiErrorCode;
+    message: string;
+    /** Per-field validation messages, keyed by field name → mapped into RHF setError. */
+    fieldErrors?: Record<string, string>;
+  };
+}
+
+export type ApiErrorCode =
+  | "bad_request"
+  | "validation_error"
+  | "unauthorized"
+  | "forbidden"
+  | "not_found"
+  | "conflict"
+  | "payload_too_large"
+  | "unsupported_media_type"
+  | "rate_limited"
+  | "internal_error";
+
+/** Health/setup status returned by the public bootstrap endpoints. */
+export interface SetupStatus {
+  /** True once at least one user exists (setup complete; signup disabled). */
+  initialized: boolean;
+}
+
+export interface HealthStatus {
+  ok: true;
+  name: string;
+  version: string;
+}
+
+/** Editable instance settings shown on the General settings page. */
+export interface ProjectSettings {
+  projectName: string;
+}
+
+// --- Collections & fields (Phase 2) -----------------------------------------
+
+export type CollectionType = "collection" | "singleton";
+
+/** A field definition as returned by the admin API. */
+export interface FieldDTO {
+  id: string;
+  name: string;
+  label: string;
+  type: FieldType;
+  options: FieldOptions;
+  sortOrder: number;
+}
+
+/** A collection in the list view (no fields, with a derived entry count). */
+export interface CollectionSummary {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  type: CollectionType;
+  titleField: string | null;
+  fieldCount: number;
+  /** Number of entries; always 0 until the entries table lands (Phase 3). */
+  entryCount: number;
+  sortOrder: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** A single collection with its ordered fields. */
+export interface CollectionDetail extends Omit<CollectionSummary, "fieldCount"> {
+  fields: FieldDTO[];
+}
+
+/** Request body for declarative full-state field replacement. */
+export interface SetFieldsInput {
+  fields: Array<{
+    name: string;
+    label: string;
+    type: FieldType;
+    options?: FieldOptions;
+  }>;
+  /** Required to permit field removals or (rejected) type changes. */
+  allowDestructive?: boolean;
+}
+
+/** Result of a declarative field replacement: what changed, by field name. */
+export interface SetFieldsResult {
+  added: string[];
+  updated: string[];
+  removed: string[];
+}
+
+// --- Entries (Phase 3) -------------------------------------------------------
+
+/**
+ * Derived publication state of an entry (never stored):
+ *  - `draft`     — never published.
+ *  - `published` — published, draft matches the published version.
+ *  - `changed`   — published, but the draft has unpublished edits ("pending").
+ */
+export type EntryStatus = "draft" | "published" | "changed";
+
+/** Field values keyed by field name. */
+export type EntryData = Record<string, unknown>;
+
+/** An entry as shown in the admin list view (compact, with a title preview). */
+export interface EntrySummary {
+  id: string;
+  slug: string | null;
+  status: EntryStatus;
+  /** Preview drawn from the collection's title field (or a fallback). */
+  title: string;
+  sortOrder: number;
+  draftUpdatedAt: number;
+  publishedAt: number | null;
+  updatedAt: number;
+}
+
+/** A single entry with both its draft and published payloads. */
+export interface EntryDetail {
+  id: string;
+  collectionId: string;
+  slug: string | null;
+  status: EntryStatus;
+  draftData: EntryData;
+  publishedData: EntryData | null;
+  sortOrder: number;
+  draftUpdatedAt: number;
+  publishedAt: number | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface EntryListResult {
+  entries: EntrySummary[];
+  total: number;
+}
+
+/** Admin list query parameters. */
+export interface ListEntriesParams {
+  status?: EntryStatus;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
+// --- Delivery API (Phase 3, public) -----------------------------------------
+
+/** A published entry as served by the delivery API. */
+export interface DeliveryEntry {
+  id: string;
+  slug: string | null;
+  sortOrder: number;
+  publishedAt: number | null;
+  data: EntryData;
+}
+
+export interface DeliveryListResponse {
+  data: DeliveryEntry[];
+  meta: { total: number; limit: number; offset: number };
+}
+
+export interface DeliveryItemResponse {
+  data: DeliveryEntry;
+}
+
+/**
+ * An expanded media reference as served by the delivery API. Picture/video field values
+ * (stored as bare media ids) are replaced with this object; dangling refs become `null`.
+ * `url` is absolute, derived from the request origin so it works on any domain.
+ */
+export interface DeliveryMedia {
+  id: string;
+  kind: MediaKind;
+  url: string;
+  mime: string;
+  width: number | null;
+  height: number | null;
+  duration: number | null;
+  alt: string | null;
+  size: number;
+}
+
+// --- Media (Phase 4) ---------------------------------------------------------
+
+export type MediaKind = "image" | "video";
+
+/** An uploaded asset as returned by the admin API. `url` is a same-origin serving path. */
+export interface MediaDTO {
+  id: string;
+  kind: MediaKind;
+  filename: string;
+  url: string;
+  mime: string;
+  size: number;
+  width: number | null;
+  height: number | null;
+  duration: number | null;
+  alt: string | null;
+  createdAt: number;
+}
+
+export interface MediaListResult {
+  media: MediaDTO[];
+  total: number;
+}
+
+export interface ListMediaParams {
+  kind?: MediaKind;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
+/** Response to initiating a multipart (video) upload. */
+export interface MultipartInit {
+  mediaId: string;
+  uploadId: string;
+  /** Required size for every part except the final one (R2 rule: equal, ≥5 MiB). */
+  partSize: number;
+}
+
+/** One uploaded part's R2-returned etag, echoed back at completion. */
+export interface UploadedPart {
+  partNumber: number;
+  etag: string;
+}
+
+export interface CompleteMultipartBody {
+  uploadId: string;
+  parts: UploadedPart[];
+  width?: number;
+  height?: number;
+  duration?: number;
+}
+
+/** One entry referencing a media asset (for the delete-usage warning). */
+export interface MediaUsageEntry {
+  entryId: string;
+  collectionSlug: string;
+  collectionName: string;
+  title: string;
+}
+
+export interface MediaUsage {
+  entries: MediaUsageEntry[];
+}
+
+/** Public schema descriptor (collections + field defs) for typed delivery clients. */
+export interface DeliveryCollectionSchema {
+  slug: string;
+  name: string;
+  description: string | null;
+  type: CollectionType;
+  titleField: string | null;
+  fields: Array<{ name: string; label: string; type: FieldType; options: FieldOptions }>;
+}

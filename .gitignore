@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.wrangler/
+.dev.vars
+.env
+.env.*
+!.dev.vars.example
+*.log
+.DS_Store
+worker-configuration.d.ts
+.vite/
+.dito-credentials
