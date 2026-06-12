@@ -34,6 +34,7 @@ import {
 } from "@/app/api/entries";
 import { collectionsKeys } from "@/app/api/collections";
 import { isApiError } from "@/app/api/client";
+import { useI18n } from "@/app/i18n";
 import { StatusBadge } from "@/app/components/common/status-badge";
 import { EmptyState } from "@/app/components/common/empty-state";
 import { ErrorState } from "@/app/components/common/error-state";
@@ -68,13 +69,6 @@ import type { CollectionDetail, EntryStatus, EntrySummary } from "@/shared/api-t
 
 const PAGE_SIZE = 50;
 
-const STATUS_TABS: { value: EntryStatus | "all"; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "draft", label: "Draft" },
-  { value: "published", label: "Published" },
-  { value: "changed", label: "Pending" },
-];
-
 function EntryRow({
   entry,
   slug,
@@ -86,6 +80,7 @@ function EntryRow({
   reorderable: boolean;
   onDelete: () => void;
 }): React.ReactElement {
+  const { t } = useI18n();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: entry.id,
     disabled: !reorderable,
@@ -101,7 +96,7 @@ function EntryRow({
           <button
             type="button"
             className="cursor-grab text-muted-foreground hover:text-foreground active:cursor-grabbing"
-            aria-label="Drag to reorder"
+            aria-label={t("entries.dragAriaLabel")}
             {...attributes}
             {...listeners}
           >
@@ -129,19 +124,19 @@ function EntryRow({
       <TableCell className="w-10 text-right">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" aria-label="Row actions">
+            <Button variant="ghost" size="icon-sm" aria-label={t("entries.rowActions")}>
               <MoreHorizontalIcon className="size-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem asChild>
               <Link to="/collections/$slug/entries/$id" params={{ slug, id: entry.id }}>
-                Edit
+                {t("entries.edit")}
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onSelect={onDelete}>
-              Delete
+              {t("entries.delete")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -151,8 +146,16 @@ function EntryRow({
 }
 
 export function EntriesListPage({ collection }: { collection: CollectionDetail }): React.ReactElement {
+  const { t } = useI18n();
   const slug = collection.slug;
   const queryClient = useQueryClient();
+
+  const STATUS_TABS: { value: EntryStatus | "all"; labelKey: "entries.status.all" | "entries.status.draft" | "entries.status.published" | "entries.status.pending" }[] = [
+    { value: "all", labelKey: "entries.status.all" },
+    { value: "draft", labelKey: "entries.status.draft" },
+    { value: "published", labelKey: "entries.status.published" },
+    { value: "changed", labelKey: "entries.status.pending" },
+  ];
 
   const [searchInput, setSearchInput] = useState("");
   const search = useDebounce(searchInput, 300);
@@ -182,7 +185,7 @@ export function EntriesListPage({ collection }: { collection: CollectionDetail }
   const reorderMutation = useMutation({
     mutationFn: (ids: string[]) => reorderEntries(slug, ids),
     onError: (e) => {
-      toast.error(isApiError(e) ? e.message : "Could not reorder");
+      toast.error(isApiError(e) ? e.message : t("entries.reorder.error"));
       void queryClient.invalidateQueries({ queryKey: entriesKeys.lists(slug) });
     },
   });
@@ -192,9 +195,9 @@ export function EntriesListPage({ collection }: { collection: CollectionDetail }
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: entriesKeys.lists(slug) });
       await queryClient.invalidateQueries({ queryKey: collectionsKeys.all });
-      toast.success("Entry deleted");
+      toast.success(t("entries.delete.success"));
     },
-    onError: (e) => toast.error(isApiError(e) ? e.message : "Could not delete entry"),
+    onError: (e) => toast.error(isApiError(e) ? e.message : t("entries.delete.error")),
     onSettled: () => setDeleteTarget(null),
   });
 
@@ -220,7 +223,7 @@ export function EntriesListPage({ collection }: { collection: CollectionDetail }
     <div className="space-y-6">
       <div className="space-y-2">
         <Link to="/collections" className="text-sm text-muted-foreground hover:text-foreground">
-          ← Collections
+          {t("entries.backToCollections")}
         </Link>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -233,13 +236,13 @@ export function EntriesListPage({ collection }: { collection: CollectionDetail }
             <Button asChild variant="outline" size="sm">
               <Link to="/collections/$slug/schema" params={{ slug }}>
                 <SlidersHorizontalIcon className="size-4" />
-                Schema
+                {t("entries.schema")}
               </Link>
             </Button>
             <Button asChild size="sm">
               <Link to="/collections/$slug/entries/new" params={{ slug }}>
                 <PlusIcon className="size-4" />
-                New entry
+                {t("entries.newEntry")}
               </Link>
             </Button>
           </div>
@@ -248,7 +251,7 @@ export function EntriesListPage({ collection }: { collection: CollectionDetail }
 
       <div className="flex flex-wrap items-center gap-3">
         <Input
-          placeholder="Search entries…"
+          placeholder={t("entries.search")}
           value={searchInput}
           onChange={(e) => {
             setSearchInput(e.target.value);
@@ -268,7 +271,7 @@ export function EntriesListPage({ collection }: { collection: CollectionDetail }
         >
           {STATUS_TABS.map((tab) => (
             <ToggleGroupItem key={tab.value} value={tab.value} className="px-3">
-              {tab.label}
+              {t(tab.labelKey)}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
@@ -285,18 +288,18 @@ export function EntriesListPage({ collection }: { collection: CollectionDetail }
       ) : entries.length === 0 ? (
         <EmptyState
           icon={SlidersHorizontalIcon}
-          title={search || statusTab !== "all" ? "No matching entries" : "No entries yet"}
+          title={search || statusTab !== "all" ? t("entries.empty.noMatch.title") : t("entries.empty.title")}
           description={
             search || statusTab !== "all"
-              ? "Try a different search or filter."
-              : "Create your first entry to start authoring content."
+              ? t("entries.empty.noMatch.description")
+              : t("entries.empty.description")
           }
           action={
             !search && statusTab === "all" ? (
               <Button asChild>
                 <Link to="/collections/$slug/entries/new" params={{ slug }}>
                   <PlusIcon className="size-4" />
-                  New entry
+                  {t("entries.newEntry")}
                 </Link>
               </Button>
             ) : undefined
@@ -309,9 +312,9 @@ export function EntriesListPage({ collection }: { collection: CollectionDetail }
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-8" />
-                  <TableHead>Title</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Updated</TableHead>
+                  <TableHead>{t("entries.table.title")}</TableHead>
+                  <TableHead>{t("entries.table.status")}</TableHead>
+                  <TableHead>{t("entries.table.updated")}</TableHead>
                   <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
@@ -336,16 +339,18 @@ export function EntriesListPage({ collection }: { collection: CollectionDetail }
 
           <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
             <span>
-              {total} {total === 1 ? "entry" : "entries"}
+              {total === 1
+                ? t("entries.count.one", { count: total })
+                : t("entries.count.other", { count: total })}
               {!canReorder && entries.length > 1 ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="ml-2 cursor-help underline decoration-dotted">
-                      reorder disabled
+                      {t("entries.reorderDisabled")}
                     </span>
                   </TooltipTrigger>
                   <TooltipContent>
-                    Clear search, filters and pagination to drag-reorder.
+                    {t("entries.reorderTooltip")}
                   </TooltipContent>
                 </Tooltip>
               ) : null}
@@ -357,10 +362,10 @@ export function EntriesListPage({ collection }: { collection: CollectionDetail }
                 disabled={page === 0}
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
               >
-                Previous
+                {t("entries.previous")}
               </Button>
               <span>
-                Page {page + 1} of {Math.max(1, Math.ceil(total / PAGE_SIZE))}
+                {t("entries.page", { current: page + 1, max: Math.max(1, Math.ceil(total / PAGE_SIZE)) })}
               </span>
               <Button
                 variant="outline"
@@ -368,7 +373,7 @@ export function EntriesListPage({ collection }: { collection: CollectionDetail }
                 disabled={(page + 1) * PAGE_SIZE >= total}
                 onClick={() => setPage((p) => p + 1)}
               >
-                Next
+                {t("entries.next")}
               </Button>
             </div>
           </div>
@@ -378,13 +383,13 @@ export function EntriesListPage({ collection }: { collection: CollectionDetail }
       <ConfirmDialog
         open={deleteTarget !== null}
         onOpenChange={(o) => !o && setDeleteTarget(null)}
-        title={`Delete “${deleteTarget?.title ?? "entry"}”?`}
+        title={t("entries.delete.confirm.title", { title: deleteTarget?.title ?? t("editor.untitled") })}
         description={
           deleteTarget?.status === "draft"
-            ? "This permanently deletes the entry."
-            : "This entry is live — it disappears from the delivery API immediately."
+            ? t("entries.delete.confirm.draftDesc")
+            : t("entries.delete.confirm.publishedDesc")
         }
-        confirmLabel="Delete"
+        confirmLabel={t("entries.delete.confirm.button")}
         destructive
         loading={deleteMutation.isPending}
         onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}

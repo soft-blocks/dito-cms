@@ -3,23 +3,25 @@ import { ImageIcon, LayoutGridIcon, type LucideIcon, SettingsIcon } from "lucide
 
 import { UserMenu } from "./user-menu";
 
+import { useI18n } from "@/app/i18n";
 import { APP_NAME } from "@/shared/constants";
 import { cn } from "@/app/lib/utils";
 
 
 interface NavItem {
   to: string;
-  label: string;
+  labelKey: "nav.collections" | "nav.media" | "nav.settings";
   icon: LucideIcon;
 }
 
 const NAV: NavItem[] = [
-  { to: "/collections", label: "Collections", icon: LayoutGridIcon },
-  { to: "/media", label: "Media", icon: ImageIcon },
-  { to: "/settings", label: "Settings", icon: SettingsIcon },
+  { to: "/collections", labelKey: "nav.collections", icon: LayoutGridIcon },
+  { to: "/media", labelKey: "nav.media", icon: ImageIcon },
+  { to: "/settings", labelKey: "nav.settings", icon: SettingsIcon },
 ];
 
 export function Sidebar(): React.ReactElement {
+  const { t } = useI18n();
   return (
     <aside className="flex h-dvh w-60 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground">
       <div className="flex h-14 items-center gap-2 px-4">
@@ -36,7 +38,7 @@ export function Sidebar(): React.ReactElement {
             activeOptions={{ exact: false }}
           >
             <item.icon className="size-4" />
-            {item.label}
+            {t(item.labelKey)}
           </Link>
         ))}
       </nav>

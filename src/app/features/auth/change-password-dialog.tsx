@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 import { changePasswordSchema, type ChangePasswordInput } from "@/shared/forms";
 import { authClient } from "@/app/api/auth-client";
+import { useI18n } from "@/app/i18n";
 import { Button } from "@/app/components/ui/button";
 import {
   Dialog,
@@ -29,6 +30,7 @@ interface ChangePasswordDialogProps {
 }
 
 export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialogProps): React.ReactElement {
+  const { t } = useI18n();
   const form = useForm<ChangePasswordInput>({
     resolver: zodResolver(changePasswordSchema),
     defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
@@ -41,10 +43,10 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
       revokeOtherSessions: true,
     });
     if (error) {
-      form.setError("currentPassword", { message: error.message ?? "Could not update password" });
+      form.setError("currentPassword", { message: error.message ?? t("auth.changePassword.error") });
       return;
     }
-    toast.success("Password updated");
+    toast.success(t("auth.changePassword.success"));
     form.reset();
     onOpenChange(false);
   };
@@ -53,8 +55,8 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
     <Dialog open={open} onOpenChange={(next) => { if (!next) form.reset(); onOpenChange(next); }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Change password</DialogTitle>
-          <DialogDescription>Enter your current password and choose a new one.</DialogDescription>
+          <DialogTitle>{t("auth.changePassword.title")}</DialogTitle>
+          <DialogDescription>{t("auth.changePassword.description")}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -63,7 +65,7 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
               name="currentPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Current password</FormLabel>
+                  <FormLabel>{t("auth.changePassword.currentPassword")}</FormLabel>
                   <FormControl>
                     <Input type="password" autoComplete="current-password" {...field} />
                   </FormControl>
@@ -76,7 +78,7 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
               name="newPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>New password</FormLabel>
+                  <FormLabel>{t("auth.changePassword.newPassword")}</FormLabel>
                   <FormControl>
                     <Input type="password" autoComplete="new-password" {...field} />
                   </FormControl>
@@ -89,7 +91,7 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Confirm new password</FormLabel>
+                  <FormLabel>{t("auth.changePassword.confirmPassword")}</FormLabel>
                   <FormControl>
                     <Input type="password" autoComplete="new-password" {...field} />
                   </FormControl>
@@ -99,10 +101,10 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
             />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
+                {t("collections.create.cancel")}
               </Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "Saving…" : "Update password"}
+                {form.formState.isSubmitting ? t("auth.changePassword.submitting") : t("auth.changePassword.submit")}
               </Button>
             </DialogFooter>
           </form>

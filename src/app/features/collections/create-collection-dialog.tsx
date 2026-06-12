@@ -10,6 +10,7 @@ import { createCollectionSchema, type CreateCollectionInput } from "@/shared/for
 import { slugify } from "@/shared/slug";
 import { collectionsKeys, createCollection } from "@/app/api/collections";
 import { isApiError } from "@/app/api/client";
+import { useI18n } from "@/app/i18n";
 import { Button } from "@/app/components/ui/button";
 import {
   Dialog,
@@ -37,25 +38,26 @@ interface CreateCollectionDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const TYPE_OPTIONS = [
-  {
-    value: "collection" as const,
-    label: "Collection",
-    description: "Many entries — blog posts, testimonials, team members.",
-    icon: LayersIcon,
-  },
-  {
-    value: "singleton" as const,
-    label: "Singleton",
-    description: "Exactly one entry — a hero, site settings, an about page.",
-    icon: FileIcon,
-  },
-];
-
 export function CreateCollectionDialog({ open, onOpenChange }: CreateCollectionDialogProps): React.ReactElement {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const slugEdited = useRef(false);
+
+  const TYPE_OPTIONS = [
+    {
+      value: "collection" as const,
+      label: t("collections.create.collectionLabel"),
+      description: t("collections.create.collectionDesc"),
+      icon: LayersIcon,
+    },
+    {
+      value: "singleton" as const,
+      label: t("collections.create.singletonLabel"),
+      description: t("collections.create.singletonDesc"),
+      icon: FileIcon,
+    },
+  ];
 
   const form = useForm<CreateCollectionInput>({
     resolver: zodResolver(createCollectionSchema),
@@ -73,7 +75,7 @@ export function CreateCollectionDialog({ open, onOpenChange }: CreateCollectionD
       await queryClient.invalidateQueries({ queryKey: collectionsKeys.all });
       onOpenChange(false);
       reset();
-      toast.success(`Created "${collection.name}"`);
+      toast.success(t("collections.create.success", { name: collection.name }));
       void navigate({ to: "/collections/$slug/schema", params: { slug: collection.slug } });
     },
     onError: (error) => {
@@ -83,7 +85,7 @@ export function CreateCollectionDialog({ open, onOpenChange }: CreateCollectionD
         }
         if (error.fieldErrors.slug || error.fieldErrors.name) return;
       }
-      toast.error(error instanceof Error ? error.message : "Could not create collection");
+      toast.error(error instanceof Error ? error.message : t("collections.create.error"));
     },
   });
 
@@ -108,8 +110,8 @@ export function CreateCollectionDialog({ open, onOpenChange }: CreateCollectionD
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>New collection</DialogTitle>
-          <DialogDescription>Define a content type. Its slug and kind can't change later.</DialogDescription>
+          <DialogTitle>{t("collections.create.title")}</DialogTitle>
+          <DialogDescription>{t("collections.create.description")}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -118,10 +120,10 @@ export function CreateCollectionDialog({ open, onOpenChange }: CreateCollectionD
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>{t("collections.create.name")}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Testimonials"
+                      placeholder={t("collections.create.namePlaceholder")}
                       {...field}
                       onChange={(e) => {
                         field.onChange(e);
@@ -138,10 +140,10 @@ export function CreateCollectionDialog({ open, onOpenChange }: CreateCollectionD
               name="slug"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Slug</FormLabel>
+                  <FormLabel>{t("collections.create.slug")}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="testimonials"
+                      placeholder={t("collections.create.slugPlaceholder")}
                       className="font-mono"
                       {...field}
                       onChange={(e) => {
@@ -150,7 +152,7 @@ export function CreateCollectionDialog({ open, onOpenChange }: CreateCollectionD
                       }}
                     />
                   </FormControl>
-                  <FormDescription>Used in delivery URLs. Lowercase, hyphenated, immutable.</FormDescription>
+                  <FormDescription>{t("collections.create.slugHint")}</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -160,7 +162,7 @@ export function CreateCollectionDialog({ open, onOpenChange }: CreateCollectionD
               name="type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Kind</FormLabel>
+                  <FormLabel>{t("collections.create.kind")}</FormLabel>
                   <div className="grid grid-cols-2 gap-3">
                     {TYPE_OPTIONS.map((option) => {
                       const active = selectedType === option.value;
@@ -193,9 +195,9 @@ export function CreateCollectionDialog({ open, onOpenChange }: CreateCollectionD
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>{t("collections.create.description_field")}</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Optional — what this collection holds." rows={2} {...field} />
+                    <Textarea placeholder={t("collections.create.descriptionPlaceholder")} rows={2} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -203,10 +205,10 @@ export function CreateCollectionDialog({ open, onOpenChange }: CreateCollectionD
             />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
+                {t("collections.create.cancel")}
               </Button>
               <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? "Creating…" : "Create collection"}
+                {mutation.isPending ? t("collections.create.submitting") : t("collections.create.submit")}
               </Button>
             </DialogFooter>
           </form>

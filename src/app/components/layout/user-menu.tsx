@@ -5,6 +5,7 @@ import { ChevronsUpDownIcon, KeyRoundIcon, LogOutIcon } from "lucide-react";
 
 import { authClient } from "@/app/api/auth-client";
 import { sessionQueryOptions } from "@/app/api/session";
+import { useI18n } from "@/app/i18n";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +20,7 @@ export function UserMenu(): React.ReactElement {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: session } = useQuery(sessionQueryOptions);
+  const { t } = useI18n();
   const [passwordOpen, setPasswordOpen] = useState(false);
 
   const user = session?.user;
@@ -39,7 +41,7 @@ export function UserMenu(): React.ReactElement {
             {initials}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate font-medium">{user?.name ?? "User"}</span>
+            <span className="block truncate font-medium">{user?.name ?? t("userMenu.user")}</span>
             <span className="block truncate text-xs text-muted-foreground">{user?.email}</span>
           </span>
           <ChevronsUpDownIcon className="size-4 text-muted-foreground" />
@@ -49,11 +51,11 @@ export function UserMenu(): React.ReactElement {
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => setPasswordOpen(true)}>
             <KeyRoundIcon className="size-4" />
-            Change password
+            {t("userMenu.changePassword")}
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => void signOut()}>
             <LogOutIcon className="size-4" />
-            Sign out
+            {t("userMenu.signOut")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

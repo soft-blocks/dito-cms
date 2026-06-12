@@ -10,6 +10,7 @@ import { createUserSchema, type CreateUserInput } from "@/shared/forms";
 import { authClient } from "@/app/api/auth-client";
 import { unwrap } from "@/app/api/client";
 import { usersKeys } from "@/app/api/users";
+import { useI18n } from "@/app/i18n";
 import { Button } from "@/app/components/ui/button";
 import {
   Dialog,
@@ -38,6 +39,7 @@ interface CreateUserDialogProps {
 }
 
 export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps): React.ReactElement {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const [revealed, setRevealed] = useState<{ email: string; password: string } | null>(null);
   const form = useForm<CreateUserInput>({
@@ -57,7 +59,7 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps):
         }),
       );
     } catch (error) {
-      form.setError("email", { message: error instanceof Error ? error.message : "Could not create user" });
+      form.setError("email", { message: error instanceof Error ? error.message : t("settings.users.create.error") });
       return;
     }
     await queryClient.invalidateQueries({ queryKey: usersKeys.all });
@@ -71,10 +73,8 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps):
       <Dialog open={open} onOpenChange={(next) => { if (!next) form.reset(); onOpenChange(next); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add user</DialogTitle>
-            <DialogDescription>
-              A temporary password is generated and shown once. The user changes it after signing in.
-            </DialogDescription>
+            <DialogTitle>{t("settings.users.create.title")}</DialogTitle>
+            <DialogDescription>{t("settings.users.create.description")}</DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -83,9 +83,9 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps):
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name</FormLabel>
+                    <FormLabel>{t("settings.users.create.name")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Jane Doe" {...field} />
+                      <Input placeholder={t("settings.users.create.namePlaceholder")} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -96,21 +96,21 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps):
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t("settings.users.create.email")}</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="jane@example.com" {...field} />
+                      <Input type="email" placeholder={t("settings.users.create.emailPlaceholder")} {...field} />
                     </FormControl>
-                    <FormDescription>This is also their sign-in username.</FormDescription>
+                    <FormDescription>{t("settings.users.create.emailHint")}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                  Cancel
+                  {t("settings.users.create.cancel")}
                 </Button>
                 <Button type="submit" disabled={form.formState.isSubmitting}>
-                  {form.formState.isSubmitting ? "Creating…" : "Create user"}
+                  {form.formState.isSubmitting ? t("settings.users.create.submitting") : t("settings.users.create.submit")}
                 </Button>
               </DialogFooter>
             </form>
@@ -124,13 +124,13 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps):
           onOpenChange={(next) => {
             if (!next) {
               setRevealed(null);
-              toast.success("User created");
+              toast.success(t("settings.users.create.success"));
             }
           }}
-          title="User created"
-          description="Share these credentials with the new user securely."
+          title={t("settings.users.create.success.title")}
+          description={t("settings.users.create.success.description")}
           secret={revealed.password}
-          fields={[{ label: "Email", value: revealed.email }]}
+          fields={[{ label: t("settings.users.create.email"), value: revealed.email }]}
         />
       ) : null}
     </>

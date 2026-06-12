@@ -9,6 +9,7 @@ import { setupSchema, type SetupInput } from "@/shared/forms";
 import { authClient } from "@/app/api/auth-client";
 import { sessionQueryOptions } from "@/app/api/session";
 import { setupStatusQueryOptions } from "@/app/api/system";
+import { useI18n } from "@/app/i18n";
 import { Button } from "@/app/components/ui/button";
 import {
   Form,
@@ -25,6 +26,7 @@ import { Input } from "@/app/components/ui/input";
 export function SetupPage(): React.ReactElement {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const form = useForm<SetupInput>({
     resolver: zodResolver(setupSchema),
     defaultValues: { name: "", email: "", password: "" },
@@ -37,7 +39,7 @@ export function SetupPage(): React.ReactElement {
       password: values.password,
     });
     if (error) {
-      form.setError("email", { message: error.message ?? "Could not create the admin account" });
+      form.setError("email", { message: error.message ?? t("auth.setup.error") });
       return;
     }
     // Clear (not just invalidate) so route guards refetch the fresh session/status
@@ -48,10 +50,7 @@ export function SetupPage(): React.ReactElement {
   };
 
   return (
-    <AuthShell
-      title="Create your admin account"
-      description="This is the first run. The account you create becomes the owner of this CMS."
-    >
+    <AuthShell title={t("auth.setup.title")} description={t("auth.setup.description")}>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
@@ -59,9 +58,9 @@ export function SetupPage(): React.ReactElement {
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Name</FormLabel>
+                <FormLabel>{t("auth.setup.name")}</FormLabel>
                 <FormControl>
-                  <Input autoComplete="name" placeholder="Jane Doe" {...field} />
+                  <Input autoComplete="name" placeholder={t("auth.setup.namePlaceholder")} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -72,7 +71,7 @@ export function SetupPage(): React.ReactElement {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>{t("auth.setup.email")}</FormLabel>
                 <FormControl>
                   <Input type="email" autoComplete="username" placeholder="you@example.com" {...field} />
                 </FormControl>
@@ -85,17 +84,17 @@ export function SetupPage(): React.ReactElement {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Password</FormLabel>
+                <FormLabel>{t("auth.setup.password")}</FormLabel>
                 <FormControl>
                   <Input type="password" autoComplete="new-password" {...field} />
                 </FormControl>
-                <FormDescription>At least 8 characters.</FormDescription>
+                <FormDescription>{t("auth.setup.passwordHint")}</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
           <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Creating…" : "Create account"}
+            {form.formState.isSubmitting ? t("auth.setup.submitting") : t("auth.setup.submit")}
           </Button>
         </form>
       </Form>

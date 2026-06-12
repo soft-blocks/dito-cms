@@ -8,6 +8,7 @@ import { useMediaUpload } from "./use-media-upload";
 import { UploadQueue } from "./upload-queue";
 
 import { mediaKeys, mediaListInfiniteQueryOptions } from "@/app/api/media";
+import { useI18n } from "@/app/i18n";
 import { PageHeader } from "@/app/components/common/page-header";
 import { EmptyState } from "@/app/components/common/empty-state";
 import { ErrorState } from "@/app/components/common/error-state";
@@ -21,17 +22,12 @@ import type { MediaDTO, MediaKind } from "@/shared/api-types";
 
 type KindFilter = "all" | MediaKind;
 
-const FILTERS: { value: KindFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "image", label: "Images" },
-  { value: "video", label: "Videos" },
-];
-
 function dragHasFiles(e: DragEvent): boolean {
   return Array.from(e.dataTransfer?.types ?? []).includes("Files");
 }
 
 export function MediaPage(): React.ReactElement {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const [kindFilter, setKindFilter] = useState<KindFilter>("all");
   const [searchInput, setSearchInput] = useState("");
@@ -41,6 +37,12 @@ export function MediaPage(): React.ReactElement {
   const [dragging, setDragging] = useState(false);
   const sentinel = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const FILTERS: { value: KindFilter; labelKey: "media.filter.all" | "media.filter.images" | "media.filter.videos" }[] = [
+    { value: "all", labelKey: "media.filter.all" },
+    { value: "image", labelKey: "media.filter.images" },
+    { value: "video", labelKey: "media.filter.videos" },
+  ];
 
   const query = useInfiniteQuery(
     mediaListInfiniteQueryOptions({
@@ -105,12 +107,12 @@ export function MediaPage(): React.ReactElement {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Media"
-        description="Images and videos for your content."
+        title={t("media.title")}
+        description={t("media.description")}
         actions={
           <Button size="sm" onClick={() => inputRef.current?.click()}>
             <UploadIcon className="size-4" />
-            Upload
+            {t("media.upload")}
           </Button>
         }
       />
@@ -128,7 +130,7 @@ export function MediaPage(): React.ReactElement {
 
       <div className="flex flex-wrap items-center gap-3">
         <Input
-          placeholder="Search media…"
+          placeholder={t("media.search")}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           className="max-w-xs"
@@ -142,7 +144,7 @@ export function MediaPage(): React.ReactElement {
         >
           {FILTERS.map((f) => (
             <ToggleGroupItem key={f.value} value={f.value} className="px-3">
-              {f.label}
+              {t(f.labelKey)}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
@@ -159,17 +161,17 @@ export function MediaPage(): React.ReactElement {
       ) : items.length === 0 ? (
         <EmptyState
           icon={ImageIcon}
-          title={search || kindFilter !== "all" ? "No matching media" : "No media yet"}
+          title={search || kindFilter !== "all" ? t("media.empty.noMatch.title") : t("media.empty.title")}
           description={
             search || kindFilter !== "all"
-              ? "Try a different search or filter."
-              : "Drag files anywhere or use the Upload button to add images and videos."
+              ? t("media.empty.noMatch.description")
+              : t("media.empty.description")
           }
           action={
             !search && kindFilter === "all" ? (
               <Button onClick={() => inputRef.current?.click()}>
                 <UploadIcon className="size-4" />
-                Upload
+                {t("media.upload")}
               </Button>
             ) : undefined
           }
@@ -179,7 +181,7 @@ export function MediaPage(): React.ReactElement {
           <MediaGrid items={items} onSelect={openDetail} selectedId={sheetOpen ? selected?.id : null} />
           <div ref={sentinel} className="h-1" />
           <p className="text-center text-sm text-muted-foreground">
-            {query.isFetchingNextPage ? "Loading…" : `${items.length} of ${total}`}
+            {query.isFetchingNextPage ? t("media.loading") : t("media.count", { count: items.length, total })}
           </p>
         </div>
       )}
@@ -191,7 +193,7 @@ export function MediaPage(): React.ReactElement {
         <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-primary/10 backdrop-blur-sm">
           <div className="rounded-xl border-2 border-dashed border-primary bg-background px-8 py-6 text-center shadow-lg">
             <UploadIcon className="mx-auto size-8 text-primary" />
-            <p className="mt-2 font-medium">Drop to upload</p>
+            <p className="mt-2 font-medium">{t("media.dropToUpload")}</p>
           </div>
         </div>
       ) : null}

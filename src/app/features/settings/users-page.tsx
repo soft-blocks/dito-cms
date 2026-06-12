@@ -10,6 +10,7 @@ import { authClient } from "@/app/api/auth-client";
 import { unwrap } from "@/app/api/client";
 import { sessionQueryOptions } from "@/app/api/session";
 import { type AdminUser, usersKeys, usersQueryOptions } from "@/app/api/users";
+import { useI18n } from "@/app/i18n";
 import { Button } from "@/app/components/ui/button";
 import { Badge } from "@/app/components/ui/badge";
 import {
@@ -36,6 +37,7 @@ import { generatePassword } from "@/app/lib/password";
 
 
 export function UsersPage(): React.ReactElement {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const { data: users, isPending, isError, error, refetch } = useQuery(usersQueryOptions);
   const { data: session } = useQuery(sessionQueryOptions);
@@ -56,9 +58,9 @@ export function UsersPage(): React.ReactElement {
         : unwrap(await authClient.admin.unbanUser({ userId: vars.userId })),
     onSuccess: async (_data, vars) => {
       await invalidate();
-      toast.success(vars.ban ? "User deactivated" : "User reactivated");
+      toast.success(vars.ban ? t("settings.users.deactivated") : t("settings.users.reactivated"));
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Action failed"),
+    onError: (e) => toast.error(e instanceof Error ? e.message : t("settings.users.actionFailed")),
   });
 
   const resetMutation = useMutation({
@@ -68,7 +70,7 @@ export function UsersPage(): React.ReactElement {
       return { email: user.email, password: newPassword };
     },
     onSuccess: (result) => setResetReveal(result),
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Could not reset password"),
+    onError: (e) => toast.error(e instanceof Error ? e.message : t("settings.users.resetError")),
   });
 
   const deleteMutation = useMutation({
@@ -76,18 +78,18 @@ export function UsersPage(): React.ReactElement {
     onSuccess: async () => {
       await invalidate();
       setDeleteTarget(null);
-      toast.success("User deleted");
+      toast.success(t("settings.users.deleted"));
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Could not delete user"),
+    onError: (e) => toast.error(e instanceof Error ? e.message : t("settings.users.deleteError")),
   });
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">Invite-only. Every user has full admin access.</p>
+        <p className="text-sm text-muted-foreground">{t("settings.users.invite")}</p>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
           <PlusIcon className="size-4" />
-          Add user
+          {t("settings.users.addUser")}
         </Button>
       </div>
 
@@ -96,15 +98,15 @@ export function UsersPage(): React.ReactElement {
       ) : isError ? (
         <ErrorState error={error} onRetry={() => void refetch()} />
       ) : users.length === 0 ? (
-        <EmptyState icon={UsersIcon} title="No users yet" />
+        <EmptyState icon={UsersIcon} title={t("settings.users.empty")} />
       ) : (
         <div className="rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created</TableHead>
+                <TableHead>{t("settings.users.table.name")}</TableHead>
+                <TableHead>{t("settings.users.table.status")}</TableHead>
+                <TableHead>{t("settings.users.table.created")}</TableHead>
                 <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
@@ -118,15 +120,17 @@ export function UsersPage(): React.ReactElement {
                     <TableCell>
                       <div className="font-medium">
                         {user.name}
-                        {isSelf ? <span className="ml-2 text-xs text-muted-foreground">(you)</span> : null}
+                        {isSelf ? (
+                          <span className="ml-2 text-xs text-muted-foreground">({t("settings.users.you")})</span>
+                        ) : null}
                       </div>
                       <div className="text-xs text-muted-foreground">{user.email}</div>
                     </TableCell>
                     <TableCell>
                       {user.banned ? (
-                        <Badge variant="secondary">Deactivated</Badge>
+                        <Badge variant="secondary">{t("settings.users.status.deactivated")}</Badge>
                       ) : (
-                        <Badge className="bg-success text-success-foreground">Active</Badge>
+                        <Badge className="bg-success text-success-foreground">{t("settings.users.status.active")}</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
@@ -141,18 +145,18 @@ export function UsersPage(): React.ReactElement {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onSelect={() => resetMutation.mutate(user)}>
-                            Reset password
+                            {t("settings.users.actions.resetPassword")}
                           </DropdownMenuItem>
                           {user.banned ? (
                             <DropdownMenuItem onSelect={() => banMutation.mutate({ userId: user.id, ban: false })}>
-                              Reactivate
+                              {t("settings.users.actions.reactivate")}
                             </DropdownMenuItem>
                           ) : (
                             <DropdownMenuItem
                               disabled={protectedRow}
                               onSelect={() => banMutation.mutate({ userId: user.id, ban: true })}
                             >
-                              Deactivate
+                              {t("settings.users.actions.deactivate")}
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />
@@ -161,7 +165,7 @@ export function UsersPage(): React.ReactElement {
                             disabled={protectedRow}
                             onSelect={() => setDeleteTarget(user)}
                           >
-                            Delete
+                            {t("settings.users.actions.delete")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -179,9 +183,9 @@ export function UsersPage(): React.ReactElement {
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(next) => { if (!next) setDeleteTarget(null); }}
-        title={`Delete ${deleteTarget?.name ?? "user"}?`}
-        description="This permanently removes the user and revokes their access. This cannot be undone."
-        confirmLabel="Delete user"
+        title={t("settings.users.delete.title", { name: deleteTarget?.name ?? "" })}
+        description={t("settings.users.delete.description")}
+        confirmLabel={t("settings.users.delete.confirm")}
         destructive
         loading={deleteMutation.isPending}
         onConfirm={() => { if (deleteTarget) deleteMutation.mutate(deleteTarget); }}
@@ -191,10 +195,10 @@ export function UsersPage(): React.ReactElement {
         <SecretRevealDialog
           open={!!resetReveal}
           onOpenChange={(next) => { if (!next) setResetReveal(null); }}
-          title="Password reset"
-          description="Share the new temporary password with the user."
+          title={t("settings.users.passwordReset.title")}
+          description={t("settings.users.passwordReset.description")}
           secret={resetReveal.password}
-          fields={[{ label: "Email", value: resetReveal.email }]}
+          fields={[{ label: t("auth.login.email"), value: resetReveal.email }]}
         />
       ) : null}
     </div>

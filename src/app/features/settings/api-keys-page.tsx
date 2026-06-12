@@ -2,17 +2,18 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { KeyRoundIcon, MoreHorizontalIcon, PlusIcon } from "lucide-react";
+import { KeyRoundIcon, MoreHorizontalIcon, PlusIcon, TriangleAlertIcon } from "lucide-react";
 import { toast } from "sonner";
-
-import { SecretRevealDialog } from "./secret-reveal-dialog";
 
 import { createApiKeySchema, type CreateApiKeyInput } from "@/shared/forms";
 import { authClient } from "@/app/api/auth-client";
 import { unwrap } from "@/app/api/client";
 import { type ApiKeyRow, apiKeysKeys, apiKeysQueryOptions } from "@/app/api/api-keys";
+import { useI18n } from "@/app/i18n";
 import { Button } from "@/app/components/ui/button";
 import { Badge } from "@/app/components/ui/badge";
+import { Alert, AlertDescription } from "@/app/components/ui/alert";
+import { CopyButton } from "@/app/components/common/copy-button";
 import {
   Dialog,
   DialogContent,
@@ -52,9 +53,10 @@ import { formatRelativeTime } from "@/app/lib/format";
 
 
 export function ApiKeysPage(): React.ReactElement {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const { data: keys, isPending, isError, error, refetch } = useQuery(apiKeysQueryOptions);
-  const [createOpen, setCreateOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [revealKey, setRevealKey] = useState<string | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<ApiKeyRow | null>(null);
 
@@ -65,15 +67,20 @@ export function ApiKeysPage(): React.ReactElement {
 
   const invalidate = (): Promise<void> => queryClient.invalidateQueries({ queryKey: apiKeysKeys.all });
 
+  const handleDialogClose = (): void => {
+    setDialogOpen(false);
+    setRevealKey(null);
+    form.reset();
+  };
+
   const createKey = async (values: CreateApiKeyInput): Promise<void> => {
     try {
       const result = unwrap(await authClient.apiKey.create({ name: values.name }));
       await invalidate();
       form.reset();
-      setCreateOpen(false);
       setRevealKey((result as { key: string }).key);
     } catch (e) {
-      form.setError("name", { message: e instanceof Error ? e.message : "Could not create key" });
+      form.setError("name", { message: e instanceof Error ? e.message : t("settings.apiKeys.create.error") });
     }
   };
 
@@ -82,20 +89,20 @@ export function ApiKeysPage(): React.ReactElement {
     onSuccess: async () => {
       await invalidate();
       setRevokeTarget(null);
-      toast.success("API key revoked");
+      toast.success(t("settings.apiKeys.revoke.success"));
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Could not revoke key"),
+    onError: (e) => toast.error(e instanceof Error ? e.message : t("settings.apiKeys.revoke.error")),
   });
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Keys authenticate the Admin API and the MCP server with a <code className="font-mono">Bearer</code> token.
+          {t("settings.apiKeys.description")}
         </p>
-        <Button size="sm" onClick={() => setCreateOpen(true)}>
+        <Button size="sm" onClick={() => setDialogOpen(true)}>
           <PlusIcon className="size-4" />
-          New key
+          {t("settings.apiKeys.newKey")}
         </Button>
       </div>
 
@@ -106,18 +113,18 @@ export function ApiKeysPage(): React.ReactElement {
       ) : keys.length === 0 ? (
         <EmptyState
           icon={KeyRoundIcon}
-          title="No API keys"
-          description="Create a key to connect external sites or AI tools."
+          title={t("settings.apiKeys.empty.title")}
+          description={t("settings.apiKeys.empty.description")}
         />
       ) : (
         <div className="rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Key</TableHead>
-                <TableHead>Last used</TableHead>
-                <TableHead>Created</TableHead>
+                <TableHead>{t("settings.apiKeys.table.name")}</TableHead>
+                <TableHead>{t("settings.apiKeys.table.key")}</TableHead>
+                <TableHead>{t("settings.apiKeys.table.lastUsed")}</TableHead>
+                <TableHead>{t("settings.apiKeys.table.created")}</TableHead>
                 <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
@@ -128,11 +135,11 @@ export function ApiKeysPage(): React.ReactElement {
                   <TableCell>
                     <code className="font-mono text-xs text-muted-foreground">{key.start ?? key.prefix}…</code>
                     {key.enabled === false ? (
-                      <Badge variant="secondary" className="ml-2">Disabled</Badge>
+                      <Badge variant="secondary" className="ml-2">{t("settings.apiKeys.disabled")}</Badge>
                     ) : null}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {key.lastRequest ? formatRelativeTime(new Date(key.lastRequest)) : "Never"}
+                    {key.lastRequest ? formatRelativeTime(new Date(key.lastRequest)) : t("settings.apiKeys.never")}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {formatRelativeTime(new Date(key.createdAt))}
@@ -146,7 +153,7 @@ export function ApiKeysPage(): React.ReactElement {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem variant="destructive" onSelect={() => setRevokeTarget(key)}>
-                          Revoke
+                          {t("settings.apiKeys.actions.revoke")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -158,56 +165,70 @@ export function ApiKeysPage(): React.ReactElement {
         </div>
       )}
 
-      <Dialog open={createOpen} onOpenChange={(next) => { if (!next) form.reset(); setCreateOpen(next); }}>
+      <Dialog open={dialogOpen} onOpenChange={(next) => { if (!next) handleDialogClose(); }}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>New API key</DialogTitle>
-            <DialogDescription>Give the key a name so you can recognise it later.</DialogDescription>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(createKey)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Production site" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          {revealKey ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>{t("settings.apiKeys.reveal.title")}</DialogTitle>
+                <DialogDescription>{t("settings.apiKeys.reveal.description")}</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 truncate rounded-md bg-muted px-3 py-2 font-mono text-sm">{revealKey}</code>
+                  <CopyButton value={revealKey} />
+                </div>
+                <Alert className="border-warning/40 text-foreground">
+                  <TriangleAlertIcon className="size-4 text-warning" />
+                  <AlertDescription>Copy this now — it won&apos;t be shown again.</AlertDescription>
+                </Alert>
+              </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={form.formState.isSubmitting}>
-                  {form.formState.isSubmitting ? "Creating…" : "Create key"}
-                </Button>
+                <Button onClick={handleDialogClose}>Done</Button>
               </DialogFooter>
-            </form>
-          </Form>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>{t("settings.apiKeys.create.title")}</DialogTitle>
+                <DialogDescription>{t("settings.apiKeys.create.description")}</DialogDescription>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(createKey)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.apiKeys.create.name")}</FormLabel>
+                        <FormControl>
+                          <Input placeholder={t("settings.apiKeys.create.namePlaceholder")} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={handleDialogClose}>
+                      {t("settings.apiKeys.create.cancel")}
+                    </Button>
+                    <Button type="submit" disabled={form.formState.isSubmitting}>
+                      {form.formState.isSubmitting ? t("settings.apiKeys.create.submitting") : t("settings.apiKeys.create.submit")}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </>
+          )}
         </DialogContent>
       </Dialog>
-
-      {revealKey ? (
-        <SecretRevealDialog
-          open={!!revealKey}
-          onOpenChange={(next) => { if (!next) setRevealKey(null); }}
-          title="API key created"
-          description="Use this as a Bearer token. Store it somewhere safe."
-          secret={revealKey}
-        />
-      ) : null}
 
       <ConfirmDialog
         open={!!revokeTarget}
         onOpenChange={(next) => { if (!next) setRevokeTarget(null); }}
-        title="Revoke this key?"
-        description="Any site or tool using this key will immediately lose access. This cannot be undone."
-        confirmLabel="Revoke key"
+        title={t("settings.apiKeys.revoke.title")}
+        description={t("settings.apiKeys.revoke.description")}
+        confirmLabel={t("settings.apiKeys.revoke.confirm")}
         destructive
         loading={revokeMutation.isPending}
         onConfirm={() => { if (revokeTarget) revokeMutation.mutate(revokeTarget); }}

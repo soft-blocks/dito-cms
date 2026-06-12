@@ -38,6 +38,7 @@ import {
   setFields,
 } from "@/app/api/collections";
 import { isApiError } from "@/app/api/client";
+import { useI18n } from "@/app/i18n";
 import { Badge } from "@/app/components/ui/badge";
 import { Button } from "@/app/components/ui/button";
 import { Skeleton } from "@/app/components/ui/skeleton";
@@ -54,6 +55,7 @@ export function SchemaBuilderPage(): React.ReactElement {
   const slug = params.slug ?? "";
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t } = useI18n();
 
   const { data: collection, isPending, isError, error, refetch } = useQuery(collectionDetailQueryOptions(slug));
 
@@ -70,7 +72,7 @@ export function SchemaBuilderPage(): React.ReactElement {
   const setFieldsMutation = useMutation({
     mutationFn: (vars: { fields: FieldDraft[]; allowDestructive?: boolean }) =>
       setFields(slug, { fields: vars.fields, allowDestructive: vars.allowDestructive }),
-    onError: (e) => toast.error(isApiError(e) ? e.message : "Could not save fields"),
+    onError: (e) => toast.error(isApiError(e) ? e.message : t("schema.fields.saveError")),
     onSettled: () => queryClient.invalidateQueries({ queryKey: collectionsKeys.all }),
   });
 
@@ -78,10 +80,10 @@ export function SchemaBuilderPage(): React.ReactElement {
     mutationFn: () => deleteCollection(slug),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: collectionsKeys.all });
-      toast.success("Collection deleted");
+      toast.success(t("schema.collection.deleted"));
       void navigate({ to: "/collections" });
     },
-    onError: (e) => toast.error(isApiError(e) ? e.message : "Could not delete collection"),
+    onError: (e) => toast.error(isApiError(e) ? e.message : t("schema.collection.deleteError")),
   });
 
   if (isPending) {
@@ -142,7 +144,7 @@ export function SchemaBuilderPage(): React.ReactElement {
       <div className="space-y-3">
         <Link to="/collections" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeftIcon className="size-4" />
-          Collections
+          {t("schema.backToCollections")}
         </Link>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
@@ -150,7 +152,7 @@ export function SchemaBuilderPage(): React.ReactElement {
               <h1 className="text-xl font-semibold tracking-tight">{col.name}</h1>
               <Badge variant="secondary">
                 <TypeIcon className="size-3" />
-                {col.type === "singleton" ? "Singleton" : "Collection"}
+                {col.type === "singleton" ? t("schema.badge.singleton") : t("schema.badge.collection")}
               </Badge>
             </div>
             <p className="font-mono text-xs text-muted-foreground">{col.slug}</p>
@@ -159,7 +161,7 @@ export function SchemaBuilderPage(): React.ReactElement {
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
               <PencilIcon className="size-4" />
-              Edit details
+              {t("schema.editDetails")}
             </Button>
             <Button
               variant="outline"
@@ -168,7 +170,7 @@ export function SchemaBuilderPage(): React.ReactElement {
               onClick={() => setDeleteCollectionOpen(true)}
             >
               <Trash2Icon className="size-4" />
-              Delete
+              {t("schema.delete")}
             </Button>
           </div>
         </div>
@@ -176,12 +178,12 @@ export function SchemaBuilderPage(): React.ReactElement {
 
       <div className="space-y-3">
         <h2 className="text-sm font-medium text-muted-foreground">
-          Fields {fields.length > 0 ? `(${fields.length})` : ""}
+          {t("schema.fields")} {fields.length > 0 ? `(${fields.length})` : ""}
         </h2>
 
         {fields.length === 0 ? (
           <p className="rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
-            No fields yet. Add one to define this {col.type === "singleton" ? "singleton" : "collection"}&rsquo;s shape.
+            {col.type === "singleton" ? t("schema.noFields.singleton") : t("schema.noFields.collection")}
           </p>
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -207,7 +209,7 @@ export function SchemaBuilderPage(): React.ReactElement {
           className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
         >
           <PlusIcon className="size-4" />
-          Add field
+          {t("schema.addField")}
         </button>
       </div>
 
@@ -223,9 +225,9 @@ export function SchemaBuilderPage(): React.ReactElement {
       <ConfirmDialog
         open={!!deleteFieldTarget}
         onOpenChange={(next) => { if (!next) setDeleteFieldTarget(null); }}
-        title={`Delete the “${deleteFieldTarget?.label}” field?`}
-        description="Existing entry data for this field becomes invisible and is stripped on the next save. This can't be undone."
-        confirmLabel="Delete field"
+        title={t("schema.deleteField.title", { label: deleteFieldTarget?.label ?? "" })}
+        description={t("schema.deleteField.description")}
+        confirmLabel={t("schema.deleteField.confirm")}
         destructive
         loading={setFieldsMutation.isPending}
         onConfirm={() => { if (deleteFieldTarget) handleDeleteField(deleteFieldTarget); }}

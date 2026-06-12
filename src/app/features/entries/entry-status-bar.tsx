@@ -3,6 +3,7 @@ import { ArrowLeftIcon, MoreVerticalIcon } from "lucide-react";
 
 import { StatusBadge } from "@/app/components/common/status-badge";
 import { Button } from "@/app/components/ui/button";
+import { useI18n } from "@/app/i18n";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,12 +34,13 @@ export interface EntryStatusBarProps {
 }
 
 export function EntryStatusBar(props: EntryStatusBarProps): React.ReactElement {
+  const { t } = useI18n();
   const hasOverflow = props.canDiscard || props.canUnpublish || props.canDelete;
   return (
     <div className="sticky bottom-0 z-20 -mx-6 mt-8 border-t bg-background/95 px-6 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-3">
         {props.hideBack ? null : (
-          <Button asChild variant="ghost" size="icon-sm" aria-label="Back to entries">
+          <Button asChild variant="ghost" size="icon-sm" aria-label={t("statusBar.backAriaLabel")}>
             <Link to="/collections/$slug" params={{ slug: props.slug }}>
               <ArrowLeftIcon className="size-4" />
             </Link>
@@ -46,9 +48,9 @@ export function EntryStatusBar(props: EntryStatusBarProps): React.ReactElement {
         )}
 
         <div className="flex min-w-0 items-center gap-2">
-          <span className="truncate text-sm font-medium">{props.title || "Untitled"}</span>
+          <span className="truncate text-sm font-medium">{props.title || t("statusBar.untitled")}</span>
           {props.isNew ? (
-            <span className="text-xs text-muted-foreground">New</span>
+            <span className="text-xs text-muted-foreground">{t("statusBar.new")}</span>
           ) : (
             <StatusBadge status={props.status} />
           )}
@@ -56,9 +58,9 @@ export function EntryStatusBar(props: EntryStatusBarProps): React.ReactElement {
 
         <div className="text-xs text-muted-foreground">
           {props.isDirty ? (
-            <span className="text-amber-600">Unsaved changes</span>
+            <span className="text-amber-600">{t("statusBar.unsavedChanges")}</span>
           ) : props.savedAt ? (
-            <span>Saved {formatRelativeTime(props.savedAt)}</span>
+            <span>{t("statusBar.saved", { time: formatRelativeTime(props.savedAt) })}</span>
           ) : null}
         </div>
 
@@ -69,35 +71,35 @@ export function EntryStatusBar(props: EntryStatusBarProps): React.ReactElement {
             onClick={props.onSaveDraft}
             disabled={props.busy !== null || (!props.isDirty && !props.isNew)}
           >
-            {props.busy === "save" ? "Saving…" : "Save draft"}
+            {props.busy === "save" ? t("statusBar.saving") : t("statusBar.saveDraft")}
           </Button>
           <Button size="sm" onClick={props.onPublish} disabled={props.busy !== null}>
             {props.busy === "publish"
-              ? "Publishing…"
+              ? t("statusBar.publishing")
               : props.status === "changed"
-                ? "Publish changes"
-                : "Publish"}
+                ? t("statusBar.publishChanges")
+                : t("statusBar.publish")}
           </Button>
           {hasOverflow ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon-sm" aria-label="More actions">
+                <Button variant="outline" size="icon-sm" aria-label={t("statusBar.moreActions")}>
                   <MoreVerticalIcon className="size-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {props.canDiscard ? (
-                  <DropdownMenuItem onSelect={props.onDiscard}>Discard changes</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={props.onDiscard}>{t("statusBar.discardChanges")}</DropdownMenuItem>
                 ) : null}
                 {props.canUnpublish ? (
-                  <DropdownMenuItem onSelect={props.onUnpublish}>Unpublish</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={props.onUnpublish}>{t("statusBar.unpublish")}</DropdownMenuItem>
                 ) : null}
                 {(props.canDiscard || props.canUnpublish) && props.canDelete ? (
                   <DropdownMenuSeparator />
                 ) : null}
                 {props.canDelete ? (
                   <DropdownMenuItem variant="destructive" onSelect={props.onDelete}>
-                    Delete entry
+                    {t("statusBar.deleteEntry")}
                   </DropdownMenuItem>
                 ) : null}
               </DropdownMenuContent>

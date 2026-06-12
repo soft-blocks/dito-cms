@@ -1,18 +1,21 @@
 import { Link, Outlet } from "@tanstack/react-router";
 
+import { useI18n } from "@/app/i18n";
 import { PageHeader } from "@/app/components/common/page-header";
 import { cn } from "@/app/lib/utils";
 
-const TABS = [
-  { to: "/settings/general", label: "General" },
-  { to: "/settings/users", label: "Users" },
-  { to: "/settings/api-keys", label: "API keys" },
-];
-
 export function SettingsLayout(): React.ReactElement {
+  const { t } = useI18n();
+
+  const TABS = [
+    { to: "/settings/general", labelKey: "settings.tabs.general" as const },
+    { to: "/settings/users", labelKey: "settings.tabs.users" as const },
+    { to: "/settings/api-keys", labelKey: "settings.tabs.apiKeys" as const },
+  ];
+
   return (
     <div className="space-y-6">
-      <PageHeader title="Settings" />
+      <PageHeader title={t("settings.title")} />
       <div className="flex gap-1 border-b">
         {TABS.map((tab) => (
           <Link
@@ -21,7 +24,7 @@ export function SettingsLayout(): React.ReactElement {
             className="-mb-px border-b-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             activeProps={{ className: cn("border-primary text-foreground") }}
           >
-            {tab.label}
+            {t(tab.labelKey)}
           </Link>
         ))}
       </div>

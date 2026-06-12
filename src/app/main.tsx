@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 
 import { routeTree } from "./router";
 import { createQueryClient } from "./api/query-client";
+import { I18nProvider } from "./i18n";
 import { Toaster } from "./components/ui/sonner";
 import { TooltipProvider } from "./components/ui/tooltip";
 import "./styles.css";
@@ -41,11 +42,13 @@ router.subscribe("onResolved", () => {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider delayDuration={200}>
-        <RouterProvider router={router} />
-        <Toaster position="bottom-right" closeButton richColors />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <I18nProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider delayDuration={200}>
+          <RouterProvider router={router} />
+          <Toaster position="bottom-right" closeButton richColors />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </I18nProvider>
   </StrictMode>,
 );

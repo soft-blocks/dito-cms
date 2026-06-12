@@ -6,6 +6,7 @@ import { FileIcon, LayersIcon, LayoutGridIcon, PlusIcon } from "lucide-react";
 import { CreateCollectionDialog } from "./create-collection-dialog";
 
 import { collectionsListQueryOptions } from "@/app/api/collections";
+import { useI18n } from "@/app/i18n";
 import { PageHeader } from "@/app/components/common/page-header";
 import { EmptyState } from "@/app/components/common/empty-state";
 import { ErrorState } from "@/app/components/common/error-state";
@@ -15,6 +16,7 @@ import { Skeleton } from "@/app/components/ui/skeleton";
 import type { CollectionSummary } from "@/shared/api-types";
 
 function CollectionCard({ collection }: { collection: CollectionSummary }): React.ReactElement {
+  const { t } = useI18n();
   const isSingleton = collection.type === "singleton";
   return (
     <Link
@@ -29,7 +31,7 @@ function CollectionCard({ collection }: { collection: CollectionSummary }): Reac
         </div>
         <Badge variant="secondary" className="shrink-0">
           {isSingleton ? <FileIcon className="size-3" /> : <LayersIcon className="size-3" />}
-          {isSingleton ? "Singleton" : "Collection"}
+          {isSingleton ? t("collections.badge.singleton") : t("collections.badge.collection")}
         </Badge>
       </div>
       {collection.description ? (
@@ -37,11 +39,15 @@ function CollectionCard({ collection }: { collection: CollectionSummary }): Reac
       ) : null}
       <div className="mt-auto flex gap-3 pt-1 text-xs text-muted-foreground">
         <span>
-          {collection.fieldCount} {collection.fieldCount === 1 ? "field" : "fields"}
+          {collection.fieldCount === 1
+            ? t("collections.fieldCount.one", { count: collection.fieldCount })
+            : t("collections.fieldCount.other", { count: collection.fieldCount })}
         </span>
         {!isSingleton ? (
           <span>
-            {collection.entryCount} {collection.entryCount === 1 ? "entry" : "entries"}
+            {collection.entryCount === 1
+              ? t("collections.entryCount.one", { count: collection.entryCount })
+              : t("collections.entryCount.other", { count: collection.entryCount })}
           </span>
         ) : null}
       </div>
@@ -64,6 +70,7 @@ function Group({ title, items }: { title: string; items: CollectionSummary[] }):
 }
 
 export function CollectionsListPage(): React.ReactElement {
+  const { t } = useI18n();
   const { data, isPending, isError, error, refetch } = useQuery(collectionsListQueryOptions);
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -73,12 +80,12 @@ export function CollectionsListPage(): React.ReactElement {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Collections"
-        description="Define your content model and author entries."
+        title={t("collections.title")}
+        description={t("collections.description")}
         actions={
           <Button size="sm" onClick={() => setCreateOpen(true)}>
             <PlusIcon className="size-4" />
-            New collection
+            {t("collections.newCollection")}
           </Button>
         }
       />
@@ -94,19 +101,19 @@ export function CollectionsListPage(): React.ReactElement {
       ) : data.length === 0 ? (
         <EmptyState
           icon={LayoutGridIcon}
-          title="No collections yet"
-          description="Collections describe the shape of your content. Create one to start defining fields."
+          title={t("collections.empty.title")}
+          description={t("collections.empty.description")}
           action={
             <Button onClick={() => setCreateOpen(true)}>
               <PlusIcon className="size-4" />
-              New collection
+              {t("collections.newCollection")}
             </Button>
           }
         />
       ) : (
         <div className="space-y-8">
-          <Group title="Collections" items={collections} />
-          <Group title="Singletons" items={singletons} />
+          <Group title={t("collections.group.collections")} items={collections} />
+          <Group title={t("collections.group.singletons")} items={singletons} />
         </div>
       )}
 

@@ -21,6 +21,7 @@ import {
 } from "@/app/api/entries";
 import { collectionsKeys } from "@/app/api/collections";
 import { isApiError } from "@/app/api/client";
+import { useI18n } from "@/app/i18n";
 import { Form } from "@/app/components/ui/form";
 import { Button } from "@/app/components/ui/button";
 import { EmptyState } from "@/app/components/common/empty-state";
@@ -63,6 +64,7 @@ function EntryEditorForm({
 }: EntryEditorProps & { onReload: () => void }): React.ReactElement {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const fields = collection.fields;
   const isNew = entry === null;
   const status = entry?.status ?? "draft";
@@ -77,7 +79,7 @@ function EntryEditorForm({
   useUnsavedChangesGuard(isDirty && busy === null);
 
   const titleValue = collection.titleField ? form.watch(collection.titleField) : undefined;
-  const liveTitle = titleFromValue(titleValue) || (isNew ? "New entry" : "Untitled");
+  const liveTitle = titleFromValue(titleValue) || (isNew ? t("editor.newEntry") : t("editor.untitled"));
 
   const syncCaches = useCallback(
     (saved: EntryDetail) => {
@@ -97,7 +99,7 @@ function EntryEditorForm({
         : await updateEntry(entry.id, { data });
       syncCaches(saved);
       form.reset(values); // clear the dirty baseline before any navigation
-      toast.success("Draft saved");
+      toast.success(t("editor.saveDraft.success"));
       if (isNew) {
         void navigate({
           to: "/collections/$slug/entries/$id",
@@ -106,9 +108,9 @@ function EntryEditorForm({
       }
     } catch (e) {
       if (isApiError(e) && applyFieldErrors(form.setError, form.setFocus, e.fieldErrors)) {
-        toast.error("Some fields need attention");
+        toast.error(t("editor.fieldsError"));
       } else {
-        toast.error(isApiError(e) ? e.message : "Could not save draft");
+        toast.error(isApiError(e) ? e.message : t("editor.saveDraft.error"));
       }
     } finally {
       setBusy(null);
@@ -128,7 +130,7 @@ function EntryEditorForm({
       }
       syncCaches(result);
       form.reset(values);
-      toast.success("Published");
+      toast.success(t("editor.publish.success"));
       if (isNew) {
         void navigate({
           to: "/collections/$slug/entries/$id",
@@ -137,9 +139,9 @@ function EntryEditorForm({
       }
     } catch (e) {
       if (isApiError(e) && applyFieldErrors(form.setError, form.setFocus, e.fieldErrors)) {
-        toast.error("Fix the highlighted fields before publishing");
+        toast.error(t("editor.fieldsPublishError"));
       } else {
-        toast.error(isApiError(e) ? e.message : "Could not publish");
+        toast.error(isApiError(e) ? e.message : t("editor.publish.error"));
       }
       if (!isNew) void queryClient.invalidateQueries({ queryKey: entriesKeys.detail(entry.id) });
     } finally {
@@ -167,9 +169,9 @@ function EntryEditorForm({
       }
       form.reset(); // drop local unsaved edits
       onReload(); // remount from the (reverted) server draft
-      toast.success("Changes discarded");
+      toast.success(t("editor.discard.success"));
     } catch (e) {
-      toast.error(isApiError(e) ? e.message : "Could not discard changes");
+      toast.error(isApiError(e) ? e.message : t("editor.discard.error"));
     } finally {
       setConfirm(null);
     }
@@ -180,9 +182,9 @@ function EntryEditorForm({
     try {
       const updated = await unpublishEntry(entry.id);
       syncCaches(updated);
-      toast.success("Unpublished");
+      toast.success(t("editor.unpublish.success"));
     } catch (e) {
-      toast.error(isApiError(e) ? e.message : "Could not unpublish");
+      toast.error(isApiError(e) ? e.message : t("editor.unpublish.error"));
     } finally {
       setConfirm(null);
     }
@@ -195,10 +197,10 @@ function EntryEditorForm({
       void queryClient.invalidateQueries({ queryKey: entriesKeys.lists(collection.slug) });
       void queryClient.invalidateQueries({ queryKey: collectionsKeys.all });
       form.reset(form.getValues()); // clear dirty so the guard doesn't block leaving
-      toast.success("Entry deleted");
+      toast.success(t("editor.deleteEntry.success"));
       void navigate({ to: "/collections/$slug", params: { slug: collection.slug } });
     } catch (e) {
-      toast.error(isApiError(e) ? e.message : "Could not delete entry");
+      toast.error(isApiError(e) ? e.message : t("editor.deleteEntry.error"));
       setConfirm(null);
     }
   };
@@ -211,12 +213,12 @@ function EntryEditorForm({
         {fields.length === 0 ? (
           <EmptyState
             icon={SlidersHorizontalIcon}
-            title="No fields to fill in"
-            description="Add fields to this collection's schema before authoring content."
+            title={t("editor.empty.title")}
+            description={t("editor.empty.description")}
             action={
               <Button asChild>
                 <Link to="/collections/$slug/schema" params={{ slug: collection.slug }}>
-                  Edit schema
+                  {t("editor.editSchema")}
                 </Link>
               </Button>
             }
@@ -252,35 +254,35 @@ function EntryEditorForm({
       <ConfirmDialog
         open={confirm === "discard"}
         onOpenChange={(o) => !o && setConfirm(null)}
-        title="Discard changes?"
+        title={t("editor.discard.title")}
         description={
           status === "changed"
-            ? "The draft reverts to the currently published version. This can't be undone."
-            : "Unsaved changes will be lost."
+            ? t("editor.discard.changedDesc")
+            : t("editor.discard.dirtyDesc")
         }
-        confirmLabel="Discard"
+        confirmLabel={t("editor.discard.confirm")}
         destructive
         onConfirm={() => void doDiscard()}
       />
       <ConfirmDialog
         open={confirm === "unpublish"}
         onOpenChange={(o) => !o && setConfirm(null)}
-        title="Unpublish this entry?"
-        description="It disappears from the delivery API immediately. The draft is kept."
-        confirmLabel="Unpublish"
+        title={t("editor.unpublish.title")}
+        description={t("editor.unpublish.description")}
+        confirmLabel={t("editor.unpublish.confirm")}
         destructive
         onConfirm={() => void doUnpublish()}
       />
       <ConfirmDialog
         open={confirm === "delete"}
         onOpenChange={(o) => !o && setConfirm(null)}
-        title="Delete this entry?"
+        title={t("editor.deleteEntry.title")}
         description={
           status === "draft"
-            ? "This permanently deletes the entry. This can't be undone."
-            : "This entry is published — it will disappear from the delivery API immediately. This can't be undone."
+            ? t("editor.deleteEntry.draftDesc")
+            : t("editor.deleteEntry.publishedDesc")
         }
-        confirmLabel="Delete"
+        confirmLabel={t("editor.deleteEntry.confirm")}
         destructive
         onConfirm={() => void doDelete()}
       />
