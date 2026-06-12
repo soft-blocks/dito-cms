@@ -261,3 +261,85 @@ export interface DeliveryCollectionSchema {
   titleField: string | null;
   fields: Array<{ name: string; label: string; type: FieldType; options: FieldOptions }>;
 }
+
+// --- Export / Import (whole-project backup) ---------------------------------
+
+/** One field as serialized in an export bundle. */
+export interface ExportedField {
+  name: string;
+  label: string;
+  type: FieldType;
+  options: FieldOptions;
+  sortOrder: number;
+}
+
+/**
+ * One entry as serialized in an export bundle. Both payloads and all timestamps are
+ * preserved so the derived status (draft/published/changed) is reproduced on import.
+ */
+export interface ExportedEntry {
+  slug: string | null;
+  locale: string;
+  draftData: EntryData;
+  publishedData: EntryData | null;
+  sortOrder: number;
+  draftUpdatedAt: number;
+  publishedAt: number | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** One collection (schema + optional entries) as serialized in an export bundle. */
+export interface ExportedCollection {
+  slug: string;
+  name: string;
+  description: string | null;
+  type: CollectionType;
+  titleField: string | null;
+  sortOrder: number;
+  fields: ExportedField[];
+  /** Present iff the bundle includes data. */
+  entries?: ExportedEntry[];
+}
+
+/** A versioned, whole-project export envelope. */
+export interface ExportDocument {
+  format: "dito-export";
+  version: 1;
+  exportedAt: number;
+  includesData: boolean;
+  collections: ExportedCollection[];
+}
+
+/** Per-collection conflict resolution chosen by the user before applying an import. */
+export type ImportResolution = "skip" | "rename" | "overwrite";
+
+/** One collection's status in an import preview. */
+export interface ImportPreviewCollection {
+  slug: string;
+  name: string;
+  type: CollectionType;
+  status: "new" | "conflict";
+  fieldCount: number;
+  entryCount: number;
+}
+
+/** The server's read of an uploaded bundle: what it contains and which slugs conflict. */
+export interface ImportPreview {
+  includesData: boolean;
+  collections: ImportPreviewCollection[];
+}
+
+/** Apply request: the bundle plus per-conflicting-slug resolutions. */
+export interface ImportApplyInput {
+  document: ExportDocument;
+  resolutions: Record<string, ImportResolution>;
+}
+
+/** What an import actually did, by collection slug. */
+export interface ImportResult {
+  created: string[];
+  renamed: { from: string; to: string }[];
+  overwritten: string[];
+  skipped: string[];
+}

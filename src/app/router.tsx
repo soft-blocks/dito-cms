@@ -20,6 +20,7 @@ import { SettingsLayout } from "./features/settings/settings-layout";
 import { GeneralSettingsPage } from "./features/settings/general-page";
 import { UsersPage } from "./features/settings/users-page";
 import { ApiKeysPage } from "./features/settings/api-keys-page";
+import { ImportExportPage } from "./features/settings/import-export-page";
 import { NotFoundPage } from "./features/misc/not-found-page";
 
 export interface RouterContext {
@@ -159,6 +160,12 @@ const apiKeysRoute = createRoute({
   component: ApiKeysPage,
 });
 
+const importExportRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: "import-export",
+  component: ImportExportPage,
+});
+
 export const routeTree = rootRoute.addChildren([
   setupRoute,
   loginRoute,
@@ -170,6 +177,12 @@ export const routeTree = rootRoute.addChildren([
     newEntryRoute,
     editEntryRoute,
     mediaRoute,
-    settingsRoute.addChildren([settingsIndexRoute, generalSettingsRoute, usersRoute, apiKeysRoute]),
+    settingsRoute.addChildren([
+      settingsIndexRoute,
+      generalSettingsRoute,
+      usersRoute,
+      apiKeysRoute,
+      importExportRoute,
+    ]),
   ]),
 ]);

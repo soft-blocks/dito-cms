@@ -2,6 +2,7 @@ import { Hono } from "hono";
 
 import type { AppEnv } from "../lib/app";
 import { requireAuth } from "../middleware/require-auth";
+import { backupRouter } from "./admin-backup";
 import { collectionsRouter } from "./admin-collections";
 import { collectionEntriesRouter, entriesRouter } from "./admin-entries";
 import { mediaRouter } from "./admin-media";
@@ -22,3 +23,4 @@ adminRouter.route("/collections", collectionEntriesRouter);
 adminRouter.route("/entries", entriesRouter);
 adminRouter.route("/media", mediaRouter);
 adminRouter.route("/settings", settingsRouter);
+adminRouter.route("/backup", backupRouter);

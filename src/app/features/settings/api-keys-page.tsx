@@ -168,7 +168,7 @@ export function ApiKeysPage(): React.ReactElement {
       <Dialog open={dialogOpen} onOpenChange={(next) => { if (!next) handleDialogClose(); }}>
         <DialogContent>
           {revealKey ? (
-            <>
+            <div className="flex flex-col gap-4">
               <DialogHeader>
                 <DialogTitle>{t("settings.apiKeys.reveal.title")}</DialogTitle>
                 <DialogDescription>{t("settings.apiKeys.reveal.description")}</DialogDescription>
@@ -186,7 +186,7 @@ export function ApiKeysPage(): React.ReactElement {
               <DialogFooter>
                 <Button onClick={handleDialogClose}>Done</Button>
               </DialogFooter>
-            </>
+            </div>
           ) : (
             <>
               <DialogHeader>

@@ -27,6 +27,7 @@ import type {
   EntryListResult,
   EntryStatus,
   EntrySummary,
+  ExportedEntry,
   ListEntriesParams,
 } from "@/shared/api-types";
 
@@ -531,6 +532,68 @@ export async function reorderEntries(db: DrizzleDb, slug: string, ids: string[])
   // Reordering changes published list order → invalidate list ETags.
   statements.push(bumpVersion(db, collection.id, now));
   await db.batch(statements as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]);
+}
+
+/**
+ * Bulk-insert entries from an export bundle into a freshly-created collection.
+ *
+ * Reuses the same lifecycle internals as createEntry: rich_text HTML is regenerated
+ * server-side (no stored XSS) and both draft and published payloads are schema-validated.
+ * Media references are deliberately NOT checked (`assertMediaRefs` is skipped) — exports
+ * carry media ids by reference and the target instance may not hold those assets.
+ *
+ * All timestamps, slug and sortOrder are preserved from the export so the derived status
+ * (draft/published/changed) is reproduced. Runs as one D1 batch.
+ */
+export async function importEntries(
+  db: DrizzleDb,
+  collectionId: string,
+  defs: FieldDefinition[],
+  exported: ExportedEntry[],
+  userId: string | undefined,
+): Promise<number> {
+  if (exported.length === 0) return 0;
+
+  const statements: BatchItem<"sqlite">[] = exported.map((e) => {
+    const draftData = validate(defs, regenerateRichText(defs, e.draftData ?? {}), "draft");
+
+    let publishedJson: string | null = null;
+    let publishedEtag: string | null = null;
+    let publishedAt: number | null = null;
+    if (e.publishedData !== null && e.publishedData !== undefined) {
+      const publishedData = validate(defs, regenerateRichText(defs, e.publishedData), "publish");
+      publishedJson = JSON.stringify(publishedData);
+      publishedEtag = hashString(publishedJson);
+      publishedAt = e.publishedAt;
+    }
+
+    return db.insert(entries).values({
+      id: nanoid(),
+      collectionId,
+      slug: normalizeEntrySlug(e.slug),
+      locale: e.locale ?? "",
+      draftData: JSON.stringify(draftData),
+      publishedData: publishedJson,
+      publishedEtag,
+      sortOrder: e.sortOrder,
+      draftUpdatedAt: e.draftUpdatedAt,
+      publishedAt,
+      createdAt: e.createdAt,
+      updatedAt: e.updatedAt,
+      createdBy: userId ?? null,
+      updatedBy: userId ?? null,
+    });
+  });
+
+  try {
+    await db.batch(statements as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]);
+  } catch (err) {
+    if (isUniqueViolation(err)) {
+      throw conflict("Duplicate entry slug in import data", { slug: "Slug already in use" });
+    }
+    throw err;
+  }
+  return exported.length;
 }
 
 /** Idempotent get-or-create of a singleton's sole entry. */
