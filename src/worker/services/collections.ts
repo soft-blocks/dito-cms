@@ -6,7 +6,7 @@ import { ZodError } from "zod";
 import type { DrizzleDb } from "../db/client";
 import { collections, fields, type CollectionRow, type FieldRow } from "../db/schema";
 import { badRequest, conflict, notFound, validationError, zodToFieldErrors } from "../lib/errors";
-import { countEntries, countEntriesByCollection } from "./entries";
+import { countEntries, countEntriesByCollection, countPublishedEntries } from "./entries";
 
 import {
   isFieldType,
@@ -366,11 +366,18 @@ export async function setFields(
   return { added, updated, removed };
 }
 
-export async function deleteCollection(db: DrizzleDb, slug: string, confirm: string): Promise<void> {
+/** Returns whether the collection had published entries, so callers can fire a deploy hook. */
+export async function deleteCollection(
+  db: DrizzleDb,
+  slug: string,
+  confirm: string,
+): Promise<{ hadPublishedEntries: boolean }> {
   const row = await findCollectionRow(db, slug);
   if (confirm !== slug) {
     throw badRequest("Confirmation does not match the collection slug");
   }
+  const hadPublishedEntries = (await countPublishedEntries(db, row.id)) > 0;
   // Fields cascade via FK; entries (Phase 3) cascade too.
   await db.delete(collections).where(eq(collections.id, row.id)).run();
+  return { hadPublishedEntries };
 }

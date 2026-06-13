@@ -21,6 +21,7 @@ import { GeneralSettingsPage } from "./features/settings/general-page";
 import { UsersPage } from "./features/settings/users-page";
 import { ApiKeysPage } from "./features/settings/api-keys-page";
 import { ImportExportPage } from "./features/settings/import-export-page";
+import { DeploySettingsPage } from "./features/settings/deploy-page";
 import { NotFoundPage } from "./features/misc/not-found-page";
 
 export interface RouterContext {
@@ -166,6 +167,12 @@ const importExportRoute = createRoute({
   component: ImportExportPage,
 });
 
+const deployRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: "deploy",
+  component: DeploySettingsPage,
+});
+
 export const routeTree = rootRoute.addChildren([
   setupRoute,
   loginRoute,
@@ -183,6 +190,7 @@ export const routeTree = rootRoute.addChildren([
       usersRoute,
       apiKeysRoute,
       importExportRoute,
+      deployRoute,
     ]),
   ]),
 ]);

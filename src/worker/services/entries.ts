@@ -329,6 +329,16 @@ export async function countEntries(db: DrizzleDb, collectionId: string): Promise
   return row?.n ?? 0;
 }
 
+/** Count entries with a published version — used to decide whether a delete fires a deploy hook. */
+export async function countPublishedEntries(db: DrizzleDb, collectionId: string): Promise<number> {
+  const row = await db
+    .select({ n: count() })
+    .from(entries)
+    .where(and(eq(entries.collectionId, collectionId), sql`${entries.publishedData} IS NOT NULL`))
+    .get();
+  return row?.n ?? 0;
+}
+
 // --- mutations ---------------------------------------------------------------
 
 export async function createEntry(
@@ -505,10 +515,12 @@ export async function discardDraft(
   return getEntryDetail(db, id);
 }
 
-export async function deleteEntry(db: DrizzleDb, id: string): Promise<void> {
+/** Returns whether the deleted entry was published, so callers can fire a deploy hook. */
+export async function deleteEntry(db: DrizzleDb, id: string): Promise<{ wasPublished: boolean }> {
   const row = await findEntry(db, id);
   const now = Date.now();
-  if (row.publishedData !== null) {
+  const wasPublished = row.publishedData !== null;
+  if (wasPublished) {
     // Was live → bump content_version so delivery list ETags change.
     await db.batch([
       db.delete(entries).where(eq(entries.id, id)),
@@ -517,6 +529,7 @@ export async function deleteEntry(db: DrizzleDb, id: string): Promise<void> {
   } else {
     await db.delete(entries).where(eq(entries.id, id)).run();
   }
+  return { wasPublished };
 }
 
 export async function reorderEntries(db: DrizzleDb, slug: string, ids: string[]): Promise<void> {

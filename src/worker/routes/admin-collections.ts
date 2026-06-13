@@ -2,6 +2,7 @@ import { Hono } from "hono";
 
 import type { AppEnv } from "../lib/app";
 import { badRequest } from "../lib/errors";
+import { fireDeployHook } from "./admin-deploy-hook";
 import {
   createCollection,
   deleteCollection,
@@ -97,6 +98,8 @@ collectionsRouter.put("/:slug/fields", async (c) => {
 collectionsRouter.delete("/:slug", async (c) => {
   const slug = c.req.param("slug");
   const confirm = c.req.query("confirm") ?? "";
-  await deleteCollection(c.get("db"), slug, confirm);
+  const { hadPublishedEntries } = await deleteCollection(c.get("db"), slug, confirm);
+  // Dropping a collection that had live entries changes the delivery API → notify the hook.
+  if (hadPublishedEntries) fireDeployHook(c);
   return c.body(null, 204);
 });

@@ -207,6 +207,7 @@ export const en: Record<TranslationKey, string> = {
   "settings.tabs.general": "General",
   "settings.tabs.users": "Users",
   "settings.tabs.apiKeys": "API keys",
+  "settings.tabs.deploy": "Deploy",
   "settings.tabs.importExport": "Import / Export",
 
   // Settings - general
@@ -298,6 +299,35 @@ export const en: Record<TranslationKey, string> = {
   "settings.apiKeys.revoke.success": "API key revoked",
   "settings.apiKeys.revoke.error": "Could not revoke key",
   "settings.apiKeys.actions.revoke": "Revoke",
+
+  // Settings - deploy hook
+  "settings.deploy.title": "Deploy hook",
+  "settings.deploy.description": "Calls a URL whenever published content changes, so an external site (e.g. on Cloudflare Pages) can rebuild. Fires on published changes only — never on drafts.",
+  "settings.deploy.enable": "Enable the hook",
+  "settings.deploy.enableHint": "When on, a request is sent on publish, unpublish, deleting published content, or reordering.",
+  "settings.deploy.url": "Hook URL",
+  "settings.deploy.urlPlaceholder": "https://api.cloudflare.com/client/v4/pages/webhooks/deploy_hooks/…",
+  "settings.deploy.urlHint": "A POST with no body is sent. The URL is a secret — stored server-side and never shown in full again.",
+  "settings.deploy.replace": "Replace",
+  "settings.deploy.cancel": "Cancel",
+  "settings.deploy.advanced": "Advanced",
+  "settings.deploy.advancedHint": "Optional auth header, e.g. for GitHub Actions or GitLab triggers. Cloudflare, Vercel and Netlify hooks don't need one.",
+  "settings.deploy.headerName": "Header name",
+  "settings.deploy.headerNamePlaceholder": "Authorization",
+  "settings.deploy.headerValue": "Header value",
+  "settings.deploy.headerValuePlaceholder": "Bearer …",
+  "settings.deploy.headerValueHint": "Stored securely and never shown again. Leave blank to keep the current value.",
+  "settings.deploy.save": "Save",
+  "settings.deploy.saving": "Saving…",
+  "settings.deploy.saved": "Hook saved",
+  "settings.deploy.saveError": "Could not save the hook",
+  "settings.deploy.test": "Send test request",
+  "settings.deploy.testing": "Sending…",
+  "settings.deploy.testSuccess": "Test request sent (HTTP {status})",
+  "settings.deploy.testError": "Test request failed: {error}",
+  "settings.deploy.lastDelivery": "Last delivery:",
+  "settings.deploy.statusOk": "ok",
+  "settings.deploy.statusFailed": "failed",
 
   // Settings - import / export
   "settings.importExport.export.title": "Export project",

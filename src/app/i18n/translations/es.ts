@@ -205,6 +205,7 @@ export const es = {
   "settings.tabs.general": "General",
   "settings.tabs.users": "Usuarios",
   "settings.tabs.apiKeys": "Claves API",
+  "settings.tabs.deploy": "Despliegue",
   "settings.tabs.importExport": "Importar / Exportar",
 
   // Settings - general
@@ -296,6 +297,35 @@ export const es = {
   "settings.apiKeys.revoke.success": "Clave API revocada",
   "settings.apiKeys.revoke.error": "No se pudo revocar la clave",
   "settings.apiKeys.actions.revoke": "Revocar",
+
+  // Settings - deploy hook
+  "settings.deploy.title": "Webhook de despliegue",
+  "settings.deploy.description": "Llama a una URL cada vez que cambia el contenido publicado, para que un sitio externo (por ejemplo en Cloudflare Pages) se reconstruya. Solo se dispara con cambios publicados, nunca con borradores.",
+  "settings.deploy.enable": "Activar el webhook",
+  "settings.deploy.enableHint": "Cuando está activo, se envía una petición al publicar, despublicar, eliminar contenido publicado o reordenar.",
+  "settings.deploy.url": "URL del webhook",
+  "settings.deploy.urlPlaceholder": "https://api.cloudflare.com/client/v4/pages/webhooks/deploy_hooks/…",
+  "settings.deploy.urlHint": "Se envía un POST sin cuerpo. La URL es secreta: se guarda en el servidor y nunca se vuelve a mostrar completa.",
+  "settings.deploy.replace": "Reemplazar",
+  "settings.deploy.cancel": "Cancelar",
+  "settings.deploy.advanced": "Avanzado",
+  "settings.deploy.advancedHint": "Cabecera de autenticación opcional, p. ej. para disparos de GitHub Actions o GitLab. Los webhooks de Cloudflare, Vercel y Netlify no la necesitan.",
+  "settings.deploy.headerName": "Nombre de la cabecera",
+  "settings.deploy.headerNamePlaceholder": "Authorization",
+  "settings.deploy.headerValue": "Valor de la cabecera",
+  "settings.deploy.headerValuePlaceholder": "Bearer …",
+  "settings.deploy.headerValueHint": "Se guarda de forma segura y nunca se vuelve a mostrar. Déjalo vacío para conservar el valor actual.",
+  "settings.deploy.save": "Guardar",
+  "settings.deploy.saving": "Guardando…",
+  "settings.deploy.saved": "Webhook guardado",
+  "settings.deploy.saveError": "No se pudo guardar el webhook",
+  "settings.deploy.test": "Enviar petición de prueba",
+  "settings.deploy.testing": "Enviando…",
+  "settings.deploy.testSuccess": "Petición de prueba enviada (HTTP {status})",
+  "settings.deploy.testError": "Falló la petición de prueba: {error}",
+  "settings.deploy.lastDelivery": "Último envío:",
+  "settings.deploy.statusOk": "correcto",
+  "settings.deploy.statusFailed": "falló",
 
   // Settings - import / export
   "settings.importExport.export.title": "Exportar proyecto",

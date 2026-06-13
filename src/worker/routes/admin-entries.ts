@@ -2,6 +2,7 @@ import { Hono } from "hono";
 
 import type { AppEnv } from "../lib/app";
 import { badRequest } from "../lib/errors";
+import { fireDeployHook } from "./admin-deploy-hook";
 import {
   createEntry,
   deleteEntry,
@@ -61,6 +62,8 @@ collectionEntriesRouter.post("/:slug/entries", async (c) => {
     },
     c.get("authUserId"),
   );
+  // Published-content change → notify the deploy hook (only when actually published).
+  if (body.publish === true) fireDeployHook(c);
   return c.json({ entry: detail }, 201);
 });
 
@@ -70,6 +73,7 @@ collectionEntriesRouter.post("/:slug/entries/reorder", async (c) => {
     throw badRequest("`ids` must be an array of entry ids");
   }
   await reorderEntries(c.get("db"), c.req.param("slug"), body.ids as string[]);
+  fireDeployHook(c);
   return c.json({ ok: true });
 });
 
@@ -105,11 +109,13 @@ entriesRouter.patch("/:id", async (c) => {
 
 entriesRouter.post("/:id/publish", async (c) => {
   const detail = await publishEntry(c.get("db"), c.req.param("id"), c.get("authUserId"));
+  fireDeployHook(c);
   return c.json({ entry: detail });
 });
 
 entriesRouter.post("/:id/unpublish", async (c) => {
   const detail = await unpublishEntry(c.get("db"), c.req.param("id"), c.get("authUserId"));
+  fireDeployHook(c);
   return c.json({ entry: detail });
 });
 
@@ -119,6 +125,8 @@ entriesRouter.post("/:id/discard", async (c) => {
 });
 
 entriesRouter.delete("/:id", async (c) => {
-  await deleteEntry(c.get("db"), c.req.param("id"));
+  const { wasPublished } = await deleteEntry(c.get("db"), c.req.param("id"));
+  // Deleting a live entry removes it from the delivery API → notify the deploy hook.
+  if (wasPublished) fireDeployHook(c);
   return c.body(null, 204);
 });

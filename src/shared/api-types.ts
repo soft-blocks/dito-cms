@@ -42,6 +42,53 @@ export interface ProjectSettings {
   projectName: string;
 }
 
+// --- Deploy hook -------------------------------------------------------------
+
+/**
+ * Redacted deploy-hook view returned by GET/PATCH. The hook URL and auth header value
+ * are treated as secrets (the URL embeds the credential, per the Cloudflare deploy-hook
+ * contract) and are NEVER returned to the browser — only a masked preview is exposed.
+ */
+export interface DeployHookSettings {
+  /** Whether the hook fires automatically on published-content changes. */
+  enabled: boolean;
+  /** True once a hook URL has been stored. */
+  configured: boolean;
+  /** Masked preview of the stored URL (`scheme://host/…/<last4>`); empty when not configured. */
+  urlPreview: string;
+  /** True when a complete optional auth header (name + value) is stored. */
+  hasAuthHeader: boolean;
+  /** The auth header name (safe to show); the value is never returned. */
+  authHeaderName: string | null;
+  /** Epoch ms of the last delivery attempt, or null if never fired. */
+  lastFiredAt: number | null;
+  /** Outcome of the last attempt (null if never fired). */
+  lastOk: boolean | null;
+  /** HTTP status of the last attempt, or null (network error / never fired). */
+  lastStatus: number | null;
+  /** Error message from the last attempt, if it failed. */
+  lastError: string | null;
+}
+
+/**
+ * PATCH body for the deploy hook. PATCH semantics: an omitted field is left unchanged
+ * (so `enabled` can toggle without resending the secret). An empty-string `url` clears
+ * the whole config. `authHeaderValue` is write-only — send it only to set a new value.
+ */
+export interface UpdateDeployHookInput {
+  url?: string;
+  enabled?: boolean;
+  authHeaderName?: string | null;
+  authHeaderValue?: string | null;
+}
+
+/** Result of POST /test (and the shape used internally for the last-delivery record). */
+export interface DeployHookTestResult {
+  ok: boolean;
+  status: number | null;
+  error?: string;
+}
+
 // --- Collections & fields (Phase 2) -----------------------------------------
 
 export type CollectionType = "collection" | "singleton";
