@@ -200,6 +200,21 @@ export const es = {
   "media.count": "{count} de {total}",
   "media.dropToUpload": "Suelta para subir",
 
+  // Media - WebP conversion (in-browser, before upload)
+  "media.webp.title": "Convertir a WebP",
+  "media.webp.description": "Recodifica en tu navegador antes de subir: archivos más livianos con las mismas dimensiones.",
+  "media.webp.quality": "Calidad",
+  "media.webp.hint": "Menor calidad significa archivos más livianos con compresión más visible.",
+  "media.webp.estimating": "Calculando…",
+  "media.webp.smaller": "{percent}% más liviano",
+  "media.webp.larger": "{percent}% más pesado",
+  "media.webp.batchNote": "La misma calidad se aplica a las {count} imágenes.",
+  "media.webp.othersNote": "Los demás archivos se subirán sin cambios.",
+  "media.webp.convert": "Subir como WebP",
+  "media.webp.keepOriginal": "Subir originales",
+  "media.webp.converting": "Convirtiendo…",
+  "media.webp.convertError": "No se pudieron convertir algunas imágenes; se subieron las originales.",
+
   // Settings - layout
   "settings.title": "Configuración",
   "settings.tabs.general": "General",

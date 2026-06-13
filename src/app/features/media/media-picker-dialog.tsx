@@ -5,6 +5,7 @@ import { ImageIcon, VideoIcon } from "lucide-react";
 import { MediaGrid } from "./media-grid";
 import { useMediaUpload } from "./use-media-upload";
 import { UploadDropzone } from "./upload-dropzone";
+import { useWebpGate, WebpConvertDialog } from "./webp-convert-dialog";
 
 import { mediaKeys, mediaListInfiniteQueryOptions } from "@/app/api/media";
 import {
@@ -61,11 +62,13 @@ export function MediaPickerDialog({ open, onOpenChange, kind, onSelect }: MediaP
       choose(media); // auto-select the freshly uploaded asset
     },
   });
+  const gate = useWebpGate(upload.enqueue);
 
   const label = kind === "image" ? "image" : "video";
   const Icon = kind === "image" ? ImageIcon : VideoIcon;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[85vh] flex-col gap-4 sm:max-w-3xl">
         <DialogHeader>
@@ -128,7 +131,7 @@ export function MediaPickerDialog({ open, onOpenChange, kind, onSelect }: MediaP
             <UploadDropzone
               accept={kind === "image" ? "image/*" : "video/*"}
               kind={kind}
-              onFiles={(files) => upload.enqueue(files)}
+              onFiles={(files) => gate.request(files)}
             />
             <div className="space-y-2">
               {upload.tasks.map((task) => (
@@ -159,5 +162,7 @@ export function MediaPickerDialog({ open, onOpenChange, kind, onSelect }: MediaP
         )}
       </DialogContent>
     </Dialog>
+    <WebpConvertDialog files={gate.pending} onCancel={gate.cancel} onComplete={gate.complete} />
+    </>
   );
 }

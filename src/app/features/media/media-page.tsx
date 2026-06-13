@@ -6,6 +6,7 @@ import { MediaGrid } from "./media-grid";
 import { MediaDetailSheet } from "./media-detail-sheet";
 import { useMediaUpload } from "./use-media-upload";
 import { UploadQueue } from "./upload-queue";
+import { useWebpGate, WebpConvertDialog } from "./webp-convert-dialog";
 
 import { mediaKeys, mediaListInfiniteQueryOptions } from "@/app/api/media";
 import { useI18n } from "@/app/i18n";
@@ -62,7 +63,8 @@ export function MediaPage(): React.ReactElement {
   const upload = useMediaUpload({
     onUploaded: () => void queryClient.invalidateQueries({ queryKey: mediaKeys.lists() }),
   });
-  const enqueue = upload.enqueue;
+  const gate = useWebpGate(upload.enqueue);
+  const request = gate.request;
 
   // Full-page drag-and-drop overlay.
   useEffect(() => {
@@ -85,7 +87,7 @@ export function MediaPage(): React.ReactElement {
       depth = 0;
       setDragging(false);
       const files = e.dataTransfer?.files;
-      if (files && files.length > 0) enqueue(Array.from(files));
+      if (files && files.length > 0) request(Array.from(files));
     };
     window.addEventListener("dragenter", onEnter);
     window.addEventListener("dragleave", onLeave);
@@ -97,7 +99,7 @@ export function MediaPage(): React.ReactElement {
       window.removeEventListener("dragover", onOver);
       window.removeEventListener("drop", onDrop);
     };
-  }, [enqueue]);
+  }, [request]);
 
   const openDetail = useCallback((media: MediaDTO) => {
     setSelected(media);
@@ -123,7 +125,7 @@ export function MediaPage(): React.ReactElement {
         multiple
         className="hidden"
         onChange={(e) => {
-          if (e.target.files && e.target.files.length > 0) enqueue(Array.from(e.target.files));
+          if (e.target.files && e.target.files.length > 0) request(Array.from(e.target.files));
           e.target.value = "";
         }}
       />
@@ -188,6 +190,7 @@ export function MediaPage(): React.ReactElement {
 
       <MediaDetailSheet media={selected} open={sheetOpen} onOpenChange={setSheetOpen} />
       <UploadQueue upload={upload} />
+      <WebpConvertDialog files={gate.pending} onCancel={gate.cancel} onComplete={gate.complete} />
 
       {dragging ? (
         <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-primary/10 backdrop-blur-sm">

@@ -202,6 +202,21 @@ export const en: Record<TranslationKey, string> = {
   "media.count": "{count} of {total}",
   "media.dropToUpload": "Drop to upload",
 
+  // Media - WebP conversion (in-browser, before upload)
+  "media.webp.title": "Convert to WebP",
+  "media.webp.description": "Re-encode in your browser before uploading — smaller files at the same dimensions.",
+  "media.webp.quality": "Quality",
+  "media.webp.hint": "Lower quality means smaller files with more visible compression.",
+  "media.webp.estimating": "Estimating…",
+  "media.webp.smaller": "{percent}% smaller",
+  "media.webp.larger": "{percent}% larger",
+  "media.webp.batchNote": "The same quality applies to all {count} images.",
+  "media.webp.othersNote": "Other selected files will upload unchanged.",
+  "media.webp.convert": "Upload as WebP",
+  "media.webp.keepOriginal": "Upload originals",
+  "media.webp.converting": "Converting…",
+  "media.webp.convertError": "Couldn't convert some images; uploaded the originals instead.",
+
   // Settings - layout
   "settings.title": "Settings",
   "settings.tabs.general": "General",
