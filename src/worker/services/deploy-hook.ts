@@ -1,7 +1,13 @@
+import { desc, sql } from "drizzle-orm";
+import { nanoid } from "nanoid";
+
 import type { DrizzleDb } from "../db/client";
+import { deployHookDeliveries } from "../db/schema";
 import { getSetting, setSetting } from "./settings";
 
 import type {
+  DeployHookActivity,
+  DeployHookDelivery,
   DeployHookSettings,
   DeployHookTestResult,
   UpdateDeployHookInput,
@@ -18,8 +24,21 @@ import type {
 // wrapper (`fireDeployHook`) lives in routes/admin-deploy-hook.ts so Hono stays out of here.
 
 const CONFIG_KEY = "deploy_hook";
-const STATUS_KEY = "deploy_hook_status";
 const TIMEOUT_MS = 10_000;
+/** How many delivery rows to retain; older rows are pruned on each insert. */
+const MAX_DELIVERIES = 50;
+/** Default page size for the activity list. */
+const DEFAULT_LIST_LIMIT = 20;
+
+/**
+ * What triggered a delivery. `event` is a stable machine string (the UI maps it to a
+ * localized label); `detail` is an optional human reference such as a collection or entry
+ * slug. Supplied by the route layer — see fireDeployHook in routes/admin-deploy-hook.ts.
+ */
+export interface DeployHookTrigger {
+  event: string;
+  detail?: string | null;
+}
 
 /** The secret config persisted under `deploy_hook`. Never sent to the browser as-is. */
 interface DeployHookConfig {
@@ -27,14 +46,6 @@ interface DeployHookConfig {
   authHeaderName?: string;
   authHeaderValue?: string;
   enabled: boolean;
-}
-
-/** Last delivery result persisted under `deploy_hook_status` (safe to surface, read-only). */
-interface DeployHookStatus {
-  lastFiredAt: number;
-  ok: boolean;
-  status: number | null;
-  error?: string;
 }
 
 const EMPTY_CONFIG: DeployHookConfig = { url: "", enabled: false };
@@ -52,22 +63,6 @@ function parseConfig(raw: string | undefined): DeployHookConfig {
     };
   } catch {
     return { ...EMPTY_CONFIG };
-  }
-}
-
-function parseStatus(raw: string | undefined): DeployHookStatus | null {
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw) as Partial<DeployHookStatus>;
-    if (typeof parsed.lastFiredAt !== "number") return null;
-    return {
-      lastFiredAt: parsed.lastFiredAt,
-      ok: parsed.ok === true,
-      status: typeof parsed.status === "number" ? parsed.status : null,
-      error: typeof parsed.error === "string" ? parsed.error : undefined,
-    };
-  } catch {
-    return null;
   }
 }
 
@@ -128,12 +123,16 @@ export function validateHookUrl(url: string): string | null {
 }
 
 /**
- * Fire the hook for a published-content change. No-op (returns ok:false) when disabled or
- * unconfigured. POSTs with no body (Cloudflare contract) and applies the optional auth
- * header. Records the outcome to `deploy_hook_status`. NEVER throws — a delivery failure
- * must not break the mutation that triggered it.
+ * Fire the hook for a published-content change. No-op (returns ok:false, logs nothing)
+ * when disabled or unconfigured. POSTs with no body (Cloudflare contract) and applies the
+ * optional auth header. Logs the attempt — trigger event + masked URL + outcome — to the
+ * activity table (deploy_hook_deliveries). NEVER throws: a delivery or logging failure must
+ * not break the mutation that triggered it.
  */
-export async function triggerDeployHook(db: DrizzleDb): Promise<DeployHookTestResult> {
+export async function triggerDeployHook(
+  db: DrizzleDb,
+  trigger: DeployHookTrigger,
+): Promise<DeployHookTestResult> {
   const config = await getDeployHookConfig(db);
   if (!config.enabled || !config.url) {
     return { ok: false, status: null, error: "Deploy hook is disabled or has no URL" };
@@ -157,18 +156,64 @@ export async function triggerDeployHook(db: DrizzleDb): Promise<DeployHookTestRe
     result = { ok: false, status: null, error: err instanceof Error ? err.message : "Request failed" };
   }
 
-  const status: DeployHookStatus = {
-    lastFiredAt: Date.now(),
-    ok: result.ok,
-    status: result.status,
-    error: result.error,
-  };
   try {
-    await setSetting(db, STATUS_KEY, JSON.stringify(status));
+    await recordDelivery(db, {
+      event: trigger.event,
+      detail: trigger.detail ?? null,
+      // Store only the MASKED URL — the raw URL is a secret and never lands in the log.
+      url: maskUrl(config.url),
+      result,
+    });
   } catch {
-    // Persisting the status is best-effort; never throw from the trigger path.
+    // Logging is best-effort; never throw from the trigger path.
   }
   return result;
+}
+
+/** Insert one delivery row, then prune to the most recent MAX_DELIVERIES rows. */
+async function recordDelivery(
+  db: DrizzleDb,
+  row: { event: string; detail: string | null; url: string; result: DeployHookTestResult },
+): Promise<void> {
+  await db.insert(deployHookDeliveries).values({
+    id: nanoid(),
+    firedAt: Date.now(),
+    event: row.event,
+    detail: row.detail,
+    url: row.url,
+    ok: row.result.ok,
+    status: row.result.status,
+    error: row.result.error ?? null,
+  });
+  await db.run(
+    sql`DELETE FROM deploy_hook_deliveries WHERE id NOT IN (
+      SELECT id FROM deploy_hook_deliveries ORDER BY fired_at DESC LIMIT ${MAX_DELIVERIES}
+    )`,
+  );
+}
+
+/** Recent delivery attempts, newest first. Masked URLs only — never the raw secret. */
+export async function listDeliveries(
+  db: DrizzleDb,
+  limit: number = DEFAULT_LIST_LIMIT,
+): Promise<DeployHookActivity> {
+  const rows = await db
+    .select()
+    .from(deployHookDeliveries)
+    .orderBy(desc(deployHookDeliveries.firedAt))
+    .limit(limit)
+    .all();
+  const deliveries: DeployHookDelivery[] = rows.map((r) => ({
+    id: r.id,
+    firedAt: r.firedAt,
+    event: r.event,
+    detail: r.detail,
+    urlPreview: r.url,
+    ok: r.ok,
+    status: r.status,
+    error: r.error,
+  }));
+  return { deliveries };
 }
 
 /** Mask a stored URL to `scheme://host/…/<last4>` — enough to recognize it, not to use it. */
@@ -187,7 +232,13 @@ function maskUrl(url: string): string {
  */
 export async function getRedactedDeployHook(db: DrizzleDb): Promise<DeployHookSettings> {
   const config = await getDeployHookConfig(db);
-  const status = parseStatus(await getSetting(db, STATUS_KEY));
+  // The "last delivery" summary is just the newest row of the activity log.
+  const last = await db
+    .select()
+    .from(deployHookDeliveries)
+    .orderBy(desc(deployHookDeliveries.firedAt))
+    .limit(1)
+    .get();
   const configured = config.url !== "";
   const hasAuthHeader = Boolean(config.authHeaderName && config.authHeaderValue);
   return {
@@ -196,9 +247,9 @@ export async function getRedactedDeployHook(db: DrizzleDb): Promise<DeployHookSe
     urlPreview: configured ? maskUrl(config.url) : "",
     hasAuthHeader,
     authHeaderName: hasAuthHeader ? (config.authHeaderName ?? null) : null,
-    lastFiredAt: status?.lastFiredAt ?? null,
-    lastOk: status ? status.ok : null,
-    lastStatus: status?.status ?? null,
-    lastError: status?.error ?? null,
+    lastFiredAt: last?.firedAt ?? null,
+    lastOk: last ? last.ok : null,
+    lastStatus: last?.status ?? null,
+    lastError: last?.error ?? null,
   };
 }

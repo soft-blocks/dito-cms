@@ -89,6 +89,31 @@ export interface DeployHookTestResult {
   error?: string;
 }
 
+/**
+ * One row of the deploy-hook activity log (a single HTTP delivery attempt). Returned by
+ * GET /api/admin/deploy-hook/deliveries, newest first. `urlPreview` is the masked URL —
+ * the raw secret URL is never logged or returned.
+ */
+export interface DeployHookDelivery {
+  id: string;
+  /** Epoch ms of the attempt. */
+  firedAt: number;
+  /** Trigger event, e.g. `entry.publish`, `entry.reorder`, `collection.delete`, `test`. */
+  event: string;
+  /** Optional human reference for the change (collection or entry slug); null if none. */
+  detail: string | null;
+  /** Masked URL that was hit (`scheme://host/…/<last4>`). */
+  urlPreview: string;
+  ok: boolean;
+  /** HTTP status, or null on a network error / timeout. */
+  status: number | null;
+  error: string | null;
+}
+
+export interface DeployHookActivity {
+  deliveries: DeployHookDelivery[];
+}
+
 // --- Collections & fields (Phase 2) -----------------------------------------
 
 export type CollectionType = "collection" | "singleton";

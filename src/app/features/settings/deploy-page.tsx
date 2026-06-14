@@ -4,6 +4,7 @@ import { CheckCircle2Icon, ChevronRightIcon, TriangleAlertIcon } from "lucide-re
 import { toast } from "sonner";
 
 import {
+  deployHookActivityQueryOptions,
   deployHookKeys,
   deployHookQueryOptions,
   testDeployHook,
@@ -11,20 +12,47 @@ import {
 } from "@/app/api/deploy-hook";
 import type { DeployHookSettings, UpdateDeployHookInput } from "@/shared/api-types";
 import { useI18n } from "@/app/i18n";
+import type { TranslationKey } from "@/app/i18n/translations/es";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { Switch } from "@/app/components/ui/switch";
 import { Skeleton } from "@/app/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/app/components/ui/table";
 import { ErrorState } from "@/app/components/common/error-state";
-import { formatRelativeTime } from "@/app/lib/format";
+import { formatDateTime, formatRelativeTime } from "@/app/lib/format";
 import { cn } from "@/app/lib/utils";
+
+// Trigger event → localized label. Unknown events fall back to the raw string, so adding
+// new trigger types server-side never breaks the table.
+const EVENT_LABEL_KEYS: Record<string, TranslationKey> = {
+  "entry.create": "settings.deploy.activity.event.entryCreate",
+  "entry.publish": "settings.deploy.activity.event.entryPublish",
+  "entry.unpublish": "settings.deploy.activity.event.entryUnpublish",
+  "entry.delete": "settings.deploy.activity.event.entryDelete",
+  "entry.reorder": "settings.deploy.activity.event.entryReorder",
+  "collection.delete": "settings.deploy.activity.event.collectionDelete",
+  test: "settings.deploy.activity.event.test",
+};
 
 export function DeploySettingsPage(): React.ReactElement {
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const { data, isPending, isError, error, refetch } = useQuery(deployHookQueryOptions);
+  const activity = useQuery(deployHookActivityQueryOptions);
+
+  const eventLabel = (event: string): string => {
+    const key = EVENT_LABEL_KEYS[event];
+    return key ? t(key) : event;
+  };
 
   const [enabled, setEnabled] = useState(false);
   const [editingUrl, setEditingUrl] = useState(false);
@@ -229,6 +257,71 @@ export function DeploySettingsPage(): React.ReactElement {
                 </div>
               ) : null}
             </form>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{t("settings.deploy.activity.title")}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t("settings.deploy.activity.description")}</p>
+        </CardHeader>
+        <CardContent>
+          {activity.isPending ? (
+            <Skeleton className="h-40 w-full" />
+          ) : activity.isError ? (
+            <ErrorState error={activity.error} onRetry={() => void activity.refetch()} />
+          ) : activity.data.deliveries.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t("settings.deploy.activity.empty")}</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("settings.deploy.activity.colEvent")}</TableHead>
+                  <TableHead>{t("settings.deploy.activity.colUrl")}</TableHead>
+                  <TableHead>{t("settings.deploy.activity.colStatus")}</TableHead>
+                  <TableHead className="text-right">{t("settings.deploy.activity.colTime")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {activity.data.deliveries.map((d) => (
+                  <TableRow key={d.id}>
+                    <TableCell>
+                      <div className="font-medium">{eventLabel(d.event)}</div>
+                      {d.detail ? (
+                        <div className="text-xs text-muted-foreground">{d.detail}</div>
+                      ) : null}
+                    </TableCell>
+                    <TableCell>
+                      <code className="font-mono text-xs text-muted-foreground">{d.urlPreview}</code>
+                    </TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center gap-1.5 text-xs">
+                        {d.ok ? (
+                          <CheckCircle2Icon className="size-4 shrink-0 text-success" />
+                        ) : (
+                          <TriangleAlertIcon className="size-4 shrink-0 text-destructive" />
+                        )}
+                        <span
+                          className={cn("max-w-[16rem] truncate", !d.ok && "text-destructive")}
+                          title={d.error ?? undefined}
+                        >
+                          {d.ok
+                            ? `HTTP ${d.status ?? ""}`.trim()
+                            : (d.error ?? t("settings.deploy.statusFailed"))}
+                        </span>
+                      </span>
+                    </TableCell>
+                    <TableCell
+                      className="whitespace-nowrap text-right text-xs text-muted-foreground"
+                      title={formatDateTime(d.firedAt)}
+                    >
+                      {formatRelativeTime(d.firedAt)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>

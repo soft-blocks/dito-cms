@@ -162,3 +162,30 @@ export const media = sqliteTable(
 );
 
 export type MediaRow = typeof media.$inferSelect;
+
+/**
+ * Append-only-ish activity log for the deploy hook: one row per actual HTTP delivery
+ * attempt (auto-fire on a published-content change, or a manual "send test"). `event`
+ * is the trigger (e.g. `entry.publish`, `collection.delete`, `test`); `detail` is an
+ * optional human reference (collection slug, entry slug). `url` is the MASKED hook URL —
+ * the raw URL is a secret and is never copied here. `ok`/`status`/`error` capture the
+ * response. Pruned to the most recent rows on insert (services/deploy-hook.ts).
+ */
+export const deployHookDeliveries = sqliteTable(
+  "deploy_hook_deliveries",
+  {
+    id: text("id").primaryKey(),
+    firedAt: integer("fired_at").notNull(),
+    event: text("event").notNull(),
+    detail: text("detail"),
+    /** Masked hook URL (`scheme://host/…/<last4>`); never the raw secret URL. */
+    url: text("url").notNull(),
+    ok: integer("ok", { mode: "boolean" }).notNull(),
+    /** HTTP status of the response, or null on a network error / timeout. */
+    status: integer("status"),
+    error: text("error"),
+  },
+  (t) => [index("deploy_hook_deliveries_fired_idx").on(t.firedAt)],
+);
+
+export type DeployHookDeliveryRow = typeof deployHookDeliveries.$inferSelect;

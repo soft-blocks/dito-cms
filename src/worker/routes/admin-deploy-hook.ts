@@ -5,10 +5,12 @@ import type { AppEnv } from "../lib/app";
 import { badRequest } from "../lib/errors";
 import {
   getRedactedDeployHook,
+  listDeliveries,
   setDeployHookConfig,
   triggerDeployHook,
   validateHookUrl,
 } from "../services/deploy-hook";
+import type { DeployHookTrigger } from "../services/deploy-hook";
 
 import type { UpdateDeployHookInput } from "@/shared/api-types";
 
@@ -51,16 +53,22 @@ deployHookRouter.patch("/", async (c) => {
 });
 
 deployHookRouter.post("/test", async (c) => {
-  return c.json(await triggerDeployHook(c.get("db")));
+  return c.json(await triggerDeployHook(c.get("db"), { event: "test" }));
+});
+
+// Recent delivery attempts (the activity log), newest first. Masked URLs only.
+deployHookRouter.get("/deliveries", async (c) => {
+  return c.json(await listDeliveries(c.get("db")));
 });
 
 /**
- * Fire the deploy hook for a published-content change, fire-and-forget. Runs in
- * `waitUntil` so it never blocks or fails the mutation response — the trigger must be
- * invisible to the editor. Mirrors the defensive waitUntil try/catch in media.ts.
+ * Fire the deploy hook for a published-content change, fire-and-forget. `trigger` records
+ * what caused it (event + optional human detail) in the activity log. Runs in `waitUntil`
+ * so it never blocks or fails the mutation response — the trigger must be invisible to the
+ * editor. Mirrors the defensive waitUntil try/catch in media.ts.
  */
-export function fireDeployHook(c: Context<AppEnv>): void {
-  const p = triggerDeployHook(c.get("db")).catch(() => {
+export function fireDeployHook(c: Context<AppEnv>, trigger: DeployHookTrigger): void {
+  const p = triggerDeployHook(c.get("db"), trigger).catch(() => {
     /* triggerDeployHook never rejects, but guard anyway */
   });
   try {

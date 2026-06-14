@@ -100,6 +100,6 @@ collectionsRouter.delete("/:slug", async (c) => {
   const confirm = c.req.query("confirm") ?? "";
   const { hadPublishedEntries } = await deleteCollection(c.get("db"), slug, confirm);
   // Dropping a collection that had live entries changes the delivery API → notify the hook.
-  if (hadPublishedEntries) fireDeployHook(c);
+  if (hadPublishedEntries) fireDeployHook(c, { event: "collection.delete", detail: slug });
   return c.body(null, 204);
 });
