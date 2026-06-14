@@ -241,11 +241,11 @@ export function DeploySettingsPage(): React.ReactElement {
               </div>
 
               {data.lastFiredAt != null ? (
-                <div className="flex items-start gap-2 border-t pt-4 text-xs">
+                <div className="flex items-start gap-2 border-t pt-4 text-xs leading-4">
                   {data.lastOk ? (
-                    <CheckCircle2Icon className="mt-0.5 size-4 shrink-0 text-success" />
+                    <CheckCircle2Icon className="size-4 shrink-0 text-success" />
                   ) : (
-                    <TriangleAlertIcon className="mt-0.5 size-4 shrink-0 text-destructive" />
+                    <TriangleAlertIcon className="size-4 shrink-0 text-destructive" />
                   )}
                   <span className="text-muted-foreground">
                     <span className="font-medium text-foreground">{t("settings.deploy.lastDelivery")}</span>{" "}

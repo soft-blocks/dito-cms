@@ -7,11 +7,13 @@ import {
 } from "lucide-react";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
-// Light theme only in v1 (no next-themes dependency).
+import { useTheme } from "@/app/lib/theme";
+
 const Toaster = ({ ...props }: ToasterProps): React.ReactElement => {
+  const { resolvedTheme } = useTheme();
   return (
     <Sonner
-      theme="light"
+      theme={resolvedTheme}
       className="toaster group"
       icons={{
         success: <CircleCheckIcon className="size-4" />,

@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronsUpDownIcon, KeyRoundIcon, LogOutIcon } from "lucide-react";
+import { ChevronsUpDownIcon, KeyRoundIcon, LogOutIcon, MoonIcon, SunIcon } from "lucide-react";
 
 import { authClient } from "@/app/api/auth-client";
 import { sessionQueryOptions } from "@/app/api/session";
 import { useI18n } from "@/app/i18n";
+import { useTheme } from "@/app/lib/theme";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,7 +22,9 @@ export function UserMenu(): React.ReactElement {
   const queryClient = useQueryClient();
   const { data: session } = useQuery(sessionQueryOptions);
   const { t } = useI18n();
+  const { resolvedTheme, setTheme } = useTheme();
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const isDark = resolvedTheme === "dark";
 
   const user = session?.user;
   const initials = (user?.name ?? user?.email ?? "?").slice(0, 2).toUpperCase();
@@ -53,6 +56,16 @@ export function UserMenu(): React.ReactElement {
             <KeyRoundIcon className="size-4" />
             {t("userMenu.changePassword")}
           </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              setTheme(isDark ? "light" : "dark");
+            }}
+          >
+            {isDark ? <SunIcon className="size-4" /> : <MoonIcon className="size-4" />}
+            {isDark ? t("userMenu.lightMode") : t("userMenu.darkMode")}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => void signOut()}>
             <LogOutIcon className="size-4" />
             {t("userMenu.signOut")}

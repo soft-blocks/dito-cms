@@ -18,6 +18,15 @@ export const MAX_VIDEO_BYTES = 2 * 1024 * 1024 * 1024; // 2 GB
 /** Rich-text serialized size cap (D1 row stays well under 2 MB). */
 export const MAX_RICH_TEXT_BYTES = 256 * 1024;
 
+/** Brand logo: client-side cap on the original image file before it's inlined as a data URL. */
+export const MAX_LOGO_BYTES = 256 * 1024; // 256 KB
+
+/**
+ * Server-side cap on the stored logo data-URL string. Larger than MAX_LOGO_BYTES to allow for
+ * base64 inflation (~4/3) of a max-size image, keeping the D1 settings row small.
+ */
+export const MAX_LOGO_DATA_URL_BYTES = 512 * 1024;
+
 /** Delivery list pagination ceiling. */
 export const MAX_DELIVERY_LIMIT = 100;
 

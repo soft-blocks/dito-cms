@@ -40,6 +40,11 @@ export interface HealthStatus {
 /** Editable instance settings shown on the General settings page. */
 export interface ProjectSettings {
   projectName: string;
+  /**
+   * Optional company/brand logo shown in the sidebar, stored as a self-contained data URL
+   * (`data:image/…;base64,…`) or an `http(s)` URL. Null when no logo has been set.
+   */
+  logo: string | null;
 }
 
 // --- Deploy hook -------------------------------------------------------------

@@ -10,6 +10,8 @@ export const en: Record<TranslationKey, string> = {
   "userMenu.changePassword": "Change password",
   "userMenu.signOut": "Sign out",
   "userMenu.user": "User",
+  "userMenu.lightMode": "Light mode",
+  "userMenu.darkMode": "Dark mode",
 
   // Status badges
   "status.draft": "Draft",
@@ -229,7 +231,13 @@ export const en: Record<TranslationKey, string> = {
   "settings.general.project": "Project",
   "settings.general.projectName": "Project name",
   "settings.general.projectNamePlaceholder": "Dito CMS",
-  "settings.general.projectNameHint": "Shown in this admin and used to identify the instance.",
+  "settings.general.projectNameHint": "Shown next to the logo in the sidebar.",
+  "settings.general.logo": "Logo",
+  "settings.general.logoHint": "Shown next to the name in the sidebar. PNG, SVG or JPG, max 256 KB.",
+  "settings.general.logoUpload": "Upload logo",
+  "settings.general.logoChange": "Change",
+  "settings.general.logoRemove": "Remove",
+  "settings.general.logoError": "The logo must be an image under 256 KB.",
   "settings.general.save": "Save",
   "settings.general.saving": "Saving…",
   "settings.general.saved": "Settings saved",
@@ -246,6 +254,8 @@ export const en: Record<TranslationKey, string> = {
   "settings.general.github": "GitHub",
   "settings.general.language": "Language",
   "settings.general.languageHint": "Language of the admin interface.",
+  "settings.general.theme": "Theme",
+  "settings.general.themeHint": "Appearance of the admin interface.",
 
   // Settings - users
   "settings.users.invite": "Invite-only. Every user has full admin access.",
@@ -400,4 +410,9 @@ export const en: Record<TranslationKey, string> = {
   // Language options
   "language.es": "Español",
   "language.en": "English",
+
+  // Theme options
+  "theme.light": "Light",
+  "theme.dark": "Dark",
+  "theme.system": "System",
 };

@@ -8,6 +8,8 @@ export const es = {
   "userMenu.changePassword": "Cambiar contraseña",
   "userMenu.signOut": "Cerrar sesión",
   "userMenu.user": "Usuario",
+  "userMenu.lightMode": "Modo claro",
+  "userMenu.darkMode": "Modo oscuro",
 
   // Status badges
   "status.draft": "Borrador",
@@ -227,7 +229,13 @@ export const es = {
   "settings.general.project": "Proyecto",
   "settings.general.projectName": "Nombre del proyecto",
   "settings.general.projectNamePlaceholder": "Dito CMS",
-  "settings.general.projectNameHint": "Se muestra en este admin y se usa para identificar la instancia.",
+  "settings.general.projectNameHint": "Se muestra junto al logo en la barra lateral.",
+  "settings.general.logo": "Logo",
+  "settings.general.logoHint": "Se muestra junto al nombre en la barra lateral. PNG, SVG o JPG, máx. 256 KB.",
+  "settings.general.logoUpload": "Subir logo",
+  "settings.general.logoChange": "Cambiar",
+  "settings.general.logoRemove": "Quitar",
+  "settings.general.logoError": "El logo debe ser una imagen de menos de 256 KB.",
   "settings.general.save": "Guardar",
   "settings.general.saving": "Guardando…",
   "settings.general.saved": "Configuración guardada",
@@ -244,6 +252,8 @@ export const es = {
   "settings.general.github": "GitHub",
   "settings.general.language": "Idioma",
   "settings.general.languageHint": "Idioma de la interfaz de administración.",
+  "settings.general.theme": "Tema",
+  "settings.general.themeHint": "Apariencia de la interfaz de administración.",
 
   // Settings - users
   "settings.users.invite": "Solo por invitación. Todos los usuarios tienen acceso de administrador.",
@@ -398,6 +408,11 @@ export const es = {
   // Language options
   "language.es": "Español",
   "language.en": "English",
+
+  // Theme options
+  "theme.light": "Claro",
+  "theme.dark": "Oscuro",
+  "theme.system": "Sistema",
 } as const;
 
 export type TranslationKey = keyof typeof es;
