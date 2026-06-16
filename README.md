@@ -3,32 +3,50 @@
 A simple, open-source **headless CMS for corporate landing pages**, self-hosted on your
 own Cloudflare account. You define your content model in a builder UI, author content with
 a draft → publish workflow, and consuming sites read published content from a public,
-read-only delivery API. An MCP server lets Claude (or any AI) set up the model and manage
-content for you.
+read-only delivery API. A built-in **MCP server** lets Claude — or any AI agent — set up
+the model and manage content for you.
 
 Everything runs in **one Cloudflare Worker**: the admin SPA, the APIs, media on R2, and
 structured content on D1. One package, one deploy.
 
-> **Status:** feature-complete (v1). Auth + first-run setup, the schema builder, entries +
-> draft/publish, the public delivery API, the R2 media pipeline, and the MCP server are all
-> in. See `build-plan.md` for the full design.
+> **Status:** feature-complete (v1). Auth + first-run setup, the schema builder, entries
+> with draft/publish, the public delivery API, the R2 media pipeline, and the MCP server
+> are all in.
 
-> **🤖 Setting up with an AI agent?** This repo ships a Claude Code skill,
-> [`setup-dito-cms`](.claude/skills/setup-dito-cms/SKILL.md), that walks an agent through the
-> whole thing — run it locally to test, deploy it to Cloudflare, or go fully autonomous
-> (deploy + create the admin and an API key + wire up the MCP server so the agent can model
-> content itself). From scratch:
->
-> ```bash
-> git clone https://github.com/Luis0Antonio/dito-cms.git
-> cd dito-cms
-> claude                       # then say: "set up Dito CMS"
-> ```
->
-> Claude handles prerequisites and the steps; it only asks you which path, your email (for the
-> fully-autonomous admin), and — if you're not already logged in — to run `wrangler login`.
+## What you get
 
----
+- **Self-hosted on your Cloudflare account** — content lives in your own D1 + R2. No
+  third-party SaaS, no per-seat pricing.
+- **Visual content modeling** — define **collections** (many entries) and **singletons**
+  (exactly one) with seven field types in a drag-and-drop schema builder.
+- **Draft → publish** — edits are saved as drafts; the delivery API only ever serves the
+  last published version.
+- **Public delivery API** — read-only, CORS-open, ETag-cached JSON at `/api/v1/*`, ready
+  for any frontend.
+- **AI-native** — a built-in MCP server lets an agent model content, author entries, and
+  pull in media from a URL.
+- **One Worker** — admin UI, APIs, and media all build and deploy together.
+
+## Use it with AI
+
+This repo ships a Claude Code skill,
+[`setup-dito-cms`](.claude/skills/setup-dito-cms/SKILL.md), that walks an agent through the
+whole thing — run it locally to test, deploy it to Cloudflare, or go fully autonomous
+(deploy + create the admin and an API key + wire up the MCP server so the agent can model
+content itself). From scratch:
+
+```bash
+git clone https://github.com/Luis0Antonio/dito-cms.git
+cd dito-cms
+claude                       # then say: "set up Dito CMS"
+```
+
+Claude handles the prerequisites and the steps; it only asks you which path, your email
+(for the fully-autonomous admin), and — if you're not already logged in — to run
+`wrangler login`.
+
+Once an instance is running, point any MCP client at it to manage content directly — see
+[MCP server](#mcp-server) below.
 
 ## Tech stack
 
@@ -43,6 +61,7 @@ structured content on D1. One package, one deploy.
 | Validation | Zod 4 (shared isomorphic module) |
 | Rich text | TipTap 3 (editor) + a DOM-free server serializer |
 | MCP | `@modelcontextprotocol/sdk` + `@hono/mcp` (stateless streamable HTTP) |
+| i18n | Built-in Spanish/English, Spanish default |
 
 ## Local development
 
@@ -201,8 +220,6 @@ and publish them. Revoking the key immediately `401`s the endpoint.
 | `/media/:id/:filename` | Media from R2 (Range, ETag, immutable) | public |
 | `/mcp` | MCP server | Bearer API key |
 
-See `build-plan.md` for the full design and roadmap.
-
 ## Plan limits & notes
 
 Dito is sized for landing-page workloads and runs comfortably on small plans, but a few
@@ -220,6 +237,12 @@ Cloudflare limits are worth knowing:
   field. `json_extract` delivery filters are table scans — fine at landing-page scale.
 - **Media URLs** use an unguessable id and are public regardless of entry status; the public
   delivery API serves published content only.
+
+## Contributing
+
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the development
+setup, project conventions, and pull-request workflow. Please report security issues
+privately via GitHub Security advisories rather than public issues.
 
 ## License
 
